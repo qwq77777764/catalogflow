@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 from catalogflow.generators.claude_cli import ClaudeCliListingGenerator
@@ -56,5 +57,54 @@ def test_claude_generator_reads_structured_output(monkeypatch) -> None:
 
     assert listing.title == "Minimal USB Desk Clock"
     assert listing.prices == {"SKU-1": 9.95}
+    assert "--bare" in captured["command"]
     assert "--no-session-persistence" in captured["command"]
+    assert captured["command"][captured["command"].index("--tools") + 1] == ""
+    assert "mcp__*" in captured["command"]
     assert "PRIVATE_SUPPLIER_API_KEY" not in captured["env"]
+
+
+def test_claude_generator_exposes_only_read_for_images(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run(command, **_kwargs):
+        captured["command"] = command
+        return SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps(
+                {
+                    "is_error": False,
+                    "structured_output": {
+                        "title": "Minimal USB Desk Clock",
+                        "description_html": "<p>Minimal USB Desk Clock</p>",
+                        "category": "Clocks",
+                        "tags": ["desk clock"],
+                    },
+                }
+            ),
+            stderr="",
+        )
+
+    with_image = Product(
+        "cj",
+        "private-source-id",
+        "Minimal Clock",
+        "USD",
+        (Variant("SKU-1", 3.5, {"finish": "oak"}),),
+        images=("https://images.example/authorized.jpg",),
+        facts={"power": "USB"},
+    )
+    monkeypatch.setattr(
+        "catalogflow.generators.claude_cli.find_cli", lambda *_args: "claude"
+    )
+    monkeypatch.setattr("catalogflow.generators.claude_cli.subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "catalogflow.generators.claude_cli.materialize_authorized_images",
+        lambda _urls, directory: [Path(directory) / "0001.jpg"],
+    )
+
+    ClaudeCliListingGenerator().generate(with_image)
+
+    command = captured["command"]
+    assert command[command.index("--tools") + 1] == "Read"
+    assert command[command.index("--allowedTools") + 1] == "Read"

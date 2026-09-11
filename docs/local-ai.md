@@ -60,9 +60,10 @@ python -m catalogflow --doctor
 python -m catalogflow examples/synthetic_product.json --source cj --generator claude
 ```
 
-CatalogFlow calls Claude in non-interactive print mode with a JSON Schema. Session persistence is
-disabled. Shell, edit, write, and web tools are denied; read access is allowed only when temporary
-authorized images need to be inspected. See Anthropic's
+CatalogFlow calls Claude in non-interactive print mode with a JSON Schema. Session persistence and
+automatic project customization are disabled. No built-in tool is available for text-only input;
+for image input, only `Read` is exposed for the temporary authorized files. MCP tools are denied.
+See Anthropic's
 [CLI reference](https://code.claude.com/docs/en/cli-usage) and
 [programmatic usage guide](https://code.claude.com/docs/en/headless).
 

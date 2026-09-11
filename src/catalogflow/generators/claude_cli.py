@@ -41,6 +41,7 @@ class ClaudeCliListingGenerator:
             image_paths = materialize_authorized_images(product.images, temp_dir)
             command = [
                 executable,
+                "--bare",
                 "-p",
                 "--output-format",
                 "json",
@@ -49,13 +50,12 @@ class ClaudeCliListingGenerator:
                 "--max-turns",
                 "3" if image_paths else "1",
                 "--no-session-persistence",
-                "--disallowedTools",
-                "Bash,Edit,Write,WebFetch,WebSearch",
             ]
             if image_paths:
-                command.extend(["--allowedTools", "Read"])
+                command.extend(["--tools", "Read", "--allowedTools", "Read"])
             else:
-                command[-1] += ",Read"
+                command.extend(["--tools", ""])
+            command.extend(["--disallowedTools", "mcp__*"])
             if self.model:
                 command.extend(["--model", self.model])
 
