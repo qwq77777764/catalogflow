@@ -124,6 +124,18 @@ def test_userscript_install_route_contains_no_session_token(tmp_path) -> None:
         server.server_close()
 
 
+def test_cors_header_is_a_fixed_allowed_origin(tmp_path) -> None:
+    server, base_url = start_collector(tmp_path)
+    request = selection_request(base_url)
+    try:
+        with urllib.request.urlopen(request, timeout=2) as response:  # noqa: S310
+            assert response.headers["Access-Control-Allow-Origin"] == ALIBABA_ORIGIN
+            assert response.headers["Vary"] == "Origin"
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
 def test_packaged_userscript_is_narrow_and_does_not_persist_session_data() -> None:
     script_path = (
         Path(__file__).parents[1]

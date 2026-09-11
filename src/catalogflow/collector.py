@@ -213,8 +213,10 @@ class CollectorRequestHandler(BaseHTTPRequestHandler):
             "Content-Security-Policy",
             "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
         )
-        if origin in self.server.application.allowed_page_origins():
-            self.send_header("Access-Control-Allow-Origin", origin)
+        # Never reflect a request header. This literal is the only browser origin
+        # supported by the first public collector and prevents response splitting.
+        if origin == "https://www.alibaba.com":
+            self.send_header("Access-Control-Allow-Origin", "https://www.alibaba.com")
             self.send_header("Vary", "Origin")
 
     def log_message(self, _format: str, *_args: object) -> None:
