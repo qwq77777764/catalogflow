@@ -1,0 +1,20 @@
+{
+  "source_id": "demo-001",
+  "title": "Minimal Wood Desk Clock",
+  "currency": "USD",
+  "variants": [
+    {
+      "sku": "DEMO-WALNUT",
+      "cost": 8.5,
+      "attributes": {
+        "finish": "walnut"
+      }
+    }
+  ],
+  "images": [],
+  "facts": {
+    "material": "wood-look composite",
+    "power": "USB"
+  }
+}
+
