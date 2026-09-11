@@ -2,6 +2,12 @@
 
 CatalogFlow is developed in small, auditable vertical slices.
 
+## Shipped in 0.3 — Local connection center
+
+- Configure named provider profiles and notes from a loopback-only browser dashboard.
+- Keep secrets in the operating-system keyring and non-secret metadata outside the repository.
+- Reuse default or explicitly selected WooCommerce, Codex, and Claude profiles.
+
 ## 0.2 — Authorized provider inputs
 
 - Add a CJ official-API adapter with injectable transport and contract tests.

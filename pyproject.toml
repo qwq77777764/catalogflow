@@ -4,12 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "catalogflow"
-version = "0.2.0"
+version = "0.3.0"
 description = "A safe, human-approved product catalog pipeline for WooCommerce."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "CatalogFlow contributors" }]
+dependencies = [
+  "keyring>=25,<27",
+]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "License :: OSI Approved :: MIT License",
@@ -28,6 +31,9 @@ catalogflow = "catalogflow.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/catalogflow"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/catalogflow/dashboard.html" = "catalogflow/dashboard.html"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

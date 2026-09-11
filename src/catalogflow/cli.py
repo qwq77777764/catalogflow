@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import sys
 
+from .configuration import ProfileRepository, SystemKeyringStore, environment_for_profile
+from .dashboard import run_dashboard
 from .doctor import print_doctor_report
 from .exporters import WooCommercePublisher, write_preview
 from .generators import (
@@ -18,7 +22,10 @@ from .providers import JsonFileSource
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Create a safe local catalog preview")
+    parser = argparse.ArgumentParser(
+        description="Create a safe local catalog preview",
+        epilog="Run 'catalogflow configure' to open the local visual connection center.",
+    )
     parser.add_argument("product_json", nargs="?", help="Authorized normalized product JSON")
     parser.add_argument(
         "--source",
@@ -47,12 +54,56 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Acknowledge the external write performed by --draft",
     )
+    parser.add_argument(
+        "--ai-profile",
+        help="Connection profile ID or unique label for the selected local AI CLI",
+    )
+    parser.add_argument(
+        "--store-profile",
+        help="WooCommerce connection profile ID or unique label used by --draft",
+    )
     return parser
 
 
-def main() -> int:
+def build_configure_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="catalogflow configure",
+        description="Open the loopback-only visual connection center",
+    )
+    parser.add_argument("--port", type=int, default=0, help="Local port; 0 chooses a free port")
+    parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Print the URL without opening it",
+    )
+    return parser
+
+
+def _load_profile(reference: str, expected_provider: str) -> None:
+    repository = ProfileRepository()
+    profile = repository.find(reference)
+    if profile.provider != expected_provider:
+        raise SystemExit(
+            f"Connection profile belongs to {profile.provider}, expected {expected_provider}"
+        )
+    os.environ.update(environment_for_profile(profile, SystemKeyringStore()))
+
+
+def _load_default_profile(provider: str) -> None:
+    repository = ProfileRepository()
+    profile = repository.default_for(provider)
+    if profile:
+        os.environ.update(environment_for_profile(profile, SystemKeyringStore()))
+
+
+def main(argv: list[str] | None = None) -> int:
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0] == "configure":
+        args = build_configure_parser().parse_args(arguments[1:])
+        run_dashboard(port=args.port, open_browser=not args.no_browser)
+        return 0
     parser = build_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(arguments)
     if args.doctor:
         print_doctor_report()
         return 0
@@ -60,6 +111,16 @@ def main() -> int:
         parser.error("product_json and --source are required unless --doctor is used")
     if args.draft and not args.yes:
         raise SystemExit("Refusing store write: --draft also requires --yes")
+    if args.ai_profile and args.generator == "deterministic":
+        parser.error("--ai-profile requires --generator codex or --generator claude")
+    if args.ai_profile:
+        _load_profile(args.ai_profile, args.generator)
+    elif args.generator in {"codex", "claude"}:
+        _load_default_profile(args.generator)
+    if args.store_profile:
+        _load_profile(args.store_profile, "woocommerce")
+    elif args.draft:
+        _load_default_profile("woocommerce")
     mode = ImportMode.DRAFT if args.draft else ImportMode.DRY_RUN
     publisher = WooCommercePublisher.from_environment() if args.draft else None
     generators = {

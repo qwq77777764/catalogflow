@@ -14,11 +14,20 @@ The private production workflow proved a useful interaction model:
 
 This makes product selection visual and keeps the AI integration on the operator's computer.
 
+The archived Alibaba implementation confirms that the selection control and the receiver were
+separate components. The detail-page Tampermonkey userscript displayed `Send to Alibaba CMD` and
+posted to a loopback `/add` endpoint. The Python CMD process owned the queue and waited for Enter.
+The batch launcher only started the Python receiver. The public replacement should preserve this
+division: a minimal browser collector plus a locally authenticated CatalogFlow receiver.
+
 ## Current public status
 
 The clean public release currently starts from a normalized product JSON file. A hardened browser
 collector is planned but is not yet shipped. There is no undocumented command that downloaders must
 ask Codex or Claude to create for them.
+
+The visual connection dashboard is shipped separately. It configures provider profiles and stores
+credentials safely; it does not yet add a selection button to Alibaba pages.
 
 The old userscripts and Python controller were not copied because they combine site-specific DOM
 selectors, browser automation, local unauthenticated endpoints, production configuration, direct

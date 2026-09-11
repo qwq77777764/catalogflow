@@ -3,7 +3,8 @@
 **把你有权使用的 CJ 或 Alibaba/1688 商品资料和图片，交给本机已登录的 Codex 或
 Claude Code，生成可审核的原创 WooCommerce 商品草稿。**
 
-[English README](README.md) · [本地 AI 接入](docs/local-ai.md) ·
+[English README](README.md) · [可视化连接面板](docs/configuration-dashboard.md) ·
+[本地 AI 接入](docs/local-ai.md) ·
 [Agent 工作流](docs/agent-workflow.md) · [浏览器到 CMD 队列](docs/browser-queue-workflow.md)
 
 这个项目来自一套真实使用过的半自动流程：在已经登录的供应商网页挑选商品，点击
@@ -18,6 +19,8 @@ Claude Code，生成可审核的原创 WooCommerce 商品草稿。**
 
 - **AI 不需要单独填写 API Key。** 可以直接复用本机 Codex CLI 或 Claude Code CLI
   自己保存的登录状态。
+- **不用编辑代码就能配置渠道。** 可视化面板允许选择渠道、填写自定义名称和备注；
+  密钥进入操作系统凭据库，不进入源代码或 Git。
 - **不需要先让 Codex/Claude 帮你改项目。** 安装 CatalogFlow 后，用
   `--generator codex` 或 `--generator claude` 即可选择；`--doctor` 会自动检查命令。
 - **可以看授权商品图后写 listing。** 最多 5 张公网 HTTPS 图片只下载到临时目录；
@@ -44,6 +47,21 @@ python -m pip install -e ".[dev]"
 ```
 
 macOS/Linux 激活虚拟环境使用：`source .venv/bin/activate`。
+
+## 用可视化面板配置渠道
+
+```powershell
+python -m catalogflow configure
+```
+
+面板只监听 `127.0.0.1`。可以选择 WooCommerce、CJ、Alibaba/1688、Zendrop、Codex 或
+Claude，为连接填写自己看得懂的名称和备注，再填写该渠道对应的字段。备注与非敏感设置
+保存在用户配置目录；真正的密钥进入 Windows Credential Manager、macOS Keychain 或
+Linux 可用的系统 keyring。已保存密钥只显示“已配置”，不会回显原值。
+
+WooCommerce、Codex 与 Claude 连接档案现在即可使用；CJ、Alibaba/1688 和 Zendrop 会明确
+显示“连接器开发中”，不会假装保存后已经能够调用。完整说明见
+[docs/configuration-dashboard.md](docs/configuration-dashboard.md)。
 
 ## 第二步：连接本机 Codex 或 Claude
 

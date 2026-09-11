@@ -7,7 +7,8 @@
 **Turn authorized CJ or Alibaba product facts and images into reviewable,
 original WooCommerce listing drafts with a locally installed Codex or Claude Code CLI.**
 
-[中文说明](README.zh-CN.md) · [Local AI setup](docs/local-ai.md) ·
+[中文说明](README.zh-CN.md) · [Connection dashboard](docs/configuration-dashboard.md) ·
+[Local AI setup](docs/local-ai.md) ·
 [Agent workflow](docs/agent-workflow.md) · [Browser-to-CMD workflow](docs/browser-queue-workflow.md)
 
 CatalogFlow grew out of a working merchant workflow: select a product while logged in to a
@@ -23,6 +24,8 @@ publishing.
 
 - **No OpenAI or Anthropic API key is required.** CatalogFlow can reuse the login already
   managed by an installed Codex CLI or Claude Code CLI.
+- **Visual connection center.** Add a provider, your own profile name, notes, and the required
+  fields without editing source code. Secrets go to the operating-system keyring, not Git.
 - **Image-aware listing generation.** Up to five operator-authorized public HTTPS product
   images are downloaded into a temporary directory, checked against private-network URLs,
   and supplied to the selected local CLI for analysis.
@@ -59,6 +62,23 @@ python -m pip install -e ".[dev]"
 ```
 
 macOS/Linux activation is `source .venv/bin/activate`.
+
+## Configure connections visually
+
+```powershell
+python -m catalogflow configure
+```
+
+The browser panel runs only on `127.0.0.1`. Choose WooCommerce, CJ, Alibaba/1688, Zendrop,
+Codex, or Claude; give the connection a name and note; then enter the corresponding fields.
+Non-secret metadata stays in the user's configuration directory and secrets go to Windows
+Credential Manager, macOS Keychain, or the available Linux keyring. Existing secrets are never
+returned to the page.
+
+WooCommerce, Codex, and Claude profiles can be used now. Supplier API profiles are clearly marked
+as reserved for their planned adapters. See
+[docs/configuration-dashboard.md](docs/configuration-dashboard.md) for storage details, profile
+selection, and failure behavior.
 
 ## Connect Codex or Claude Code without an API key
 
