@@ -1,0 +1,34 @@
+name: Bug report
+description: Report a reproducible CatalogFlow defect without production data.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include credentials, store URLs, customer data, or raw supplier payloads.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed behavior
+      description: Describe what happened using synthetic or redacted data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: CatalogFlow version
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide commands and synthetic input only.
+    validations:
+      required: true

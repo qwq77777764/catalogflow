@@ -1,5 +1,9 @@
 # CatalogFlow
 
+[![CI](https://github.com/qwq77777764/catalogflow/actions/workflows/ci.yml/badge.svg)](https://github.com/qwq77777764/catalogflow/actions/workflows/ci.yml)
+[![Secret scan](https://github.com/qwq77777764/catalogflow/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/qwq77777764/catalogflow/actions/workflows/secret-scan.yml)
+[![CodeQL](https://github.com/qwq77777764/catalogflow/actions/workflows/codeql.yml/badge.svg)](https://github.com/qwq77777764/catalogflow/actions/workflows/codeql.yml)
+
 CatalogFlow is a safety-first, human-approved pipeline that turns authorized supplier
 product facts into consistent WooCommerce drafts.
 
@@ -78,6 +82,7 @@ store write cannot happen accidentally in the default mode.
 
 See [docs/architecture.md](docs/architecture.md) and
 [docs/migration-from-private-workflow.md](docs/migration-from-private-workflow.md).
+Planned work is tracked in [ROADMAP.md](ROADMAP.md).
 
 ## Supplier and data policy
 

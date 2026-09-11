@@ -1,0 +1,26 @@
+name: Feature request
+description: Propose a safe, provider-neutral improvement.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What catalog-maintenance problem should be easier?
+    validations:
+      required: true
+  - type: textarea
+    id: interface
+    attributes:
+      label: Proposed interface
+      description: Describe the smallest interface callers would need to learn.
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety and external effects
+      description: Identify network access, credentials, supplier data, and store writes.
+    validations:
+      required: true
