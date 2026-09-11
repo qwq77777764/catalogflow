@@ -11,8 +11,9 @@ from typing import Protocol
 
 PROVIDERS: dict[str, dict[str, object]] = {
     "woocommerce": {
-        "name": "WooCommerce",
-        "description": "Create hidden product drafts in your own store.",
+        "name": "WooCommerce REST API",
+        "category": "store",
+        "description": "Recommended WordPress path; create hidden WooCommerce drafts over HTTPS.",
         "availability": "available",
         "fields": [
             {
@@ -41,8 +42,79 @@ PROVIDERS: dict[str, dict[str, object]] = {
             },
         ],
     },
+    "wordpress_ssh": {
+        "name": "WordPress WP-CLI over SSH",
+        "category": "store",
+        "description": (
+            "Advanced fallback using a restricted SSH host alias; "
+            "no password or key is stored here."
+        ),
+        "availability": "planned",
+        "fields": [
+            {
+                "name": "host_alias",
+                "label": "SSH config host alias",
+                "type": "text",
+                "secret": False,
+                "environment": "CATALOGFLOW_WP_SSH_HOST",
+                "placeholder": "Example: nestnook-prod (from ~/.ssh/config)",
+            },
+            {
+                "name": "wordpress_path",
+                "label": "Remote WordPress path",
+                "type": "text",
+                "secret": False,
+                "environment": "CATALOGFLOW_WP_PATH",
+                "placeholder": "/var/www/example.com",
+            },
+            {
+                "name": "wp_command",
+                "label": "WP-CLI command (optional)",
+                "type": "text",
+                "secret": False,
+                "environment": "CATALOGFLOW_WP_COMMAND",
+                "placeholder": "wp",
+            },
+        ],
+    },
+    "shopify": {
+        "name": "Shopify Admin API",
+        "category": "store",
+        "description": (
+            "Planned GraphQL Admin API adapter for stores you control "
+            "through Shopify Dev Dashboard."
+        ),
+        "availability": "planned",
+        "fields": [
+            {
+                "name": "shop",
+                "label": "Shop domain",
+                "type": "text",
+                "secret": False,
+                "environment": "SHOPIFY_SHOP",
+                "placeholder": "your-store.myshopify.com",
+            },
+            {
+                "name": "client_id",
+                "label": "Client ID",
+                "type": "text",
+                "secret": False,
+                "environment": "SHOPIFY_CLIENT_ID",
+                "placeholder": "From Shopify Dev Dashboard",
+            },
+            {
+                "name": "client_secret",
+                "label": "Client secret",
+                "type": "password",
+                "secret": True,
+                "environment": "SHOPIFY_CLIENT_SECRET",
+                "placeholder": "Stored only in the operating-system keyring",
+            },
+        ],
+    },
     "cj": {
         "name": "CJdropshipping API",
+        "category": "source",
         "description": "Reserved for the official CJ source adapter.",
         "availability": "planned",
         "fields": [
@@ -58,6 +130,7 @@ PROVIDERS: dict[str, dict[str, object]] = {
     },
     "alibaba": {
         "name": "Alibaba / 1688 Open Platform",
+        "category": "source",
         "description": "Reserved for an authorized Open Platform adapter.",
         "availability": "planned",
         "fields": [
@@ -89,6 +162,7 @@ PROVIDERS: dict[str, dict[str, object]] = {
     },
     "zendrop": {
         "name": "Zendrop API",
+        "category": "source",
         "description": "Reserved for a future authorized source adapter.",
         "availability": "planned",
         "fields": [
@@ -104,6 +178,7 @@ PROVIDERS: dict[str, dict[str, object]] = {
     },
     "codex": {
         "name": "Codex CLI",
+        "category": "ai",
         "description": "Reuse the Codex CLI login already stored on this computer.",
         "availability": "available",
         "fields": [
@@ -127,6 +202,7 @@ PROVIDERS: dict[str, dict[str, object]] = {
     },
     "claude": {
         "name": "Claude Code CLI",
+        "category": "ai",
         "description": "Reuse the Claude Code login already stored on this computer.",
         "availability": "available",
         "fields": [

@@ -3,11 +3,20 @@ import json
 import pytest
 
 from catalogflow.configuration import (
+    PROVIDERS,
     MemorySecretStore,
     ProfileRepository,
     environment_for_profile,
     public_profile,
 )
+
+
+def test_provider_catalog_groups_store_source_and_local_ai_connections() -> None:
+    categories = {definition["category"] for definition in PROVIDERS.values()}
+    assert categories == {"store", "source", "ai"}
+    assert PROVIDERS["woocommerce"]["availability"] == "available"
+    assert PROVIDERS["wordpress_ssh"]["availability"] == "planned"
+    assert PROVIDERS["shopify"]["availability"] == "planned"
 
 
 def test_profile_metadata_never_contains_secret(tmp_path) -> None:
@@ -49,6 +58,30 @@ def test_profile_resolves_runtime_environment(tmp_path) -> None:
         "WOOCOMMERCE_URL": "https://store.example",
         "WOOCOMMERCE_CONSUMER_KEY": "key",
         "WOOCOMMERCE_CONSUMER_SECRET": "secret",
+    }
+
+
+def test_shopify_profile_keeps_client_secret_out_of_metadata(tmp_path) -> None:
+    repository = ProfileRepository(tmp_path)
+    secrets = MemorySecretStore()
+    profile = repository.save(
+        provider="shopify",
+        label="Future Shopify store",
+        notes="Own-organization Dev Dashboard app",
+        values={
+            "shop": "example.myshopify.com",
+            "client_id": "public-client-id",
+        },
+        secrets={"client_secret": "private-client-secret"},
+        secret_store=secrets,
+    )
+
+    on_disk = repository.path.read_text(encoding="utf-8")
+    assert "private-client-secret" not in on_disk
+    assert environment_for_profile(profile, secrets) == {
+        "SHOPIFY_SHOP": "example.myshopify.com",
+        "SHOPIFY_CLIENT_ID": "public-client-id",
+        "SHOPIFY_CLIENT_SECRET": "private-client-secret",
     }
 
 

@@ -10,6 +10,10 @@ All notable changes are documented here.
   to the dashboard.
 - Added reusable WooCommerce, Codex, and Claude profiles while clearly marking unfinished supplier
   adapters as planned.
+- Grouped connections into store, supplier, and local-AI sections; added planned Shopify Admin API
+  and restricted WP-CLI-over-SSH profiles without storing SSH passwords or private keys.
+- Documented the official-API-first, user-initiated selection model and the no-silent-fallback rule
+  when local AI quota or authorized provider access is unavailable.
 - Documented the verified separation between the historical Alibaba Tampermonkey selector and its
   Python CMD queue receiver.
 

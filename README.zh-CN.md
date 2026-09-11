@@ -54,14 +54,20 @@ macOS/Linux 激活虚拟环境使用：`source .venv/bin/activate`。
 python -m catalogflow configure
 ```
 
-面板只监听 `127.0.0.1`。可以选择 WooCommerce、CJ、Alibaba/1688、Zendrop、Codex 或
-Claude，为连接填写自己看得懂的名称和备注，再填写该渠道对应的字段。备注与非敏感设置
+面板只监听 `127.0.0.1`，并把连接分成“商店发布、供应商来源、本地 AI”三组。商店发布
+包括已经可用的 WooCommerce REST API，以及规划中的 WordPress WP-CLI over SSH 和
+Shopify Admin API。为连接填写自己看得懂的名称和备注，再填写该渠道对应的字段。备注与非敏感设置
 保存在用户配置目录；真正的密钥进入 Windows Credential Manager、macOS Keychain 或
 Linux 可用的系统 keyring。已保存密钥只显示“已配置”，不会回显原值。
 
 WooCommerce、Codex 与 Claude 连接档案现在即可使用；CJ、Alibaba/1688 和 Zendrop 会明确
 显示“连接器开发中”，不会假装保存后已经能够调用。完整说明见
 [docs/configuration-dashboard.md](docs/configuration-dashboard.md)。
+
+CatalogFlow 采用“官方 API 优先”，不是批量爬虫。网页按钮只代表操作者主动选择某个商品；
+正式发布的供应商适配器必须使用下载者本人合法申请并获得授权的官方 API 凭据获取资料，
+不得遍历站点、绕过登录、验证码、访问控制或限流。没有官方 API 权限时，只接受操作者有权
+使用的结构化资料，不会在后台悄悄退化为网页爬取。
 
 ## 第二步：连接本机 Codex 或 Claude
 

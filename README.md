@@ -69,8 +69,10 @@ macOS/Linux activation is `source .venv/bin/activate`.
 python -m catalogflow configure
 ```
 
-The browser panel runs only on `127.0.0.1`. Choose WooCommerce, CJ, Alibaba/1688, Zendrop,
-Codex, or Claude; give the connection a name and note; then enter the corresponding fields.
+The browser panel runs only on `127.0.0.1`. Connections are grouped as store publishers,
+supplier sources, and local AI. Store choices include the available WooCommerce REST API plus
+planned WordPress WP-CLI-over-SSH and Shopify Admin API paths. Give each connection a name and
+note, then enter its corresponding fields.
 Non-secret metadata stays in the user's configuration directory and secrets go to Windows
 Credential Manager, macOS Keychain, or the available Linux keyring. Existing secrets are never
 returned to the page.
@@ -79,6 +81,12 @@ WooCommerce, Codex, and Claude profiles can be used now. Supplier API profiles a
 as reserved for their planned adapters. See
 [docs/configuration-dashboard.md](docs/configuration-dashboard.md) for storage details, profile
 selection, and failure behavior.
+
+CatalogFlow is official-API-first, not a bulk crawler. A browser button is a user-initiated product
+selector; released supplier adapters must retrieve data through the user's own authorized official
+API credentials. They must not enumerate a site, bypass login, CAPTCHA, access controls, or rate
+limits. When official API access is unavailable, the safe fallback is operator-supplied structured
+data—not silent scraping.
 
 ## Connect Codex or Claude Code without an API key
 

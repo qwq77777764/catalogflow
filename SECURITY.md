@@ -25,3 +25,11 @@ Any future localhost browser bridge must use a random per-session token, an exac
 allowlist, request-size limits, rate limiting, and SSRF protection. It must not return
 tracebacks or local paths to callers.
 
+## Provider and SSH invariant
+
+- Released supplier adapters must use the operator's authorized official API credentials. They must
+  not crawl result pages, bypass authentication/CAPTCHA/access controls, evade rate limits, or
+  silently fall back to scraping.
+- A future WP-CLI-over-SSH adapter may reference a local SSH config alias, but must never collect or
+  persist SSH passwords or private keys. Documentation and defaults must recommend a restricted
+  account or forced command instead of root access.

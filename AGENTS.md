@@ -42,6 +42,17 @@ These rules apply to Codex, Claude Code, and human contributors working in this 
 - Never collect browser cookies, passwords, authorization headers, payment data, messages, or raw
   page dumps.
 - Site-specific selectors must fail closed and be covered by sanitized fixtures.
+- Treat the page button as a user-initiated selector, not a crawler. Released supplier adapters must
+  use official provider APIs with the contributor's own authorization and must not silently fall
+  back to scraping when the API is missing, denied, rate-limited, or out of quota.
+
+## Store connectors
+
+- Prefer the WooCommerce REST API for routine WordPress product drafts. A future WP-CLI-over-SSH
+  adapter must use a local SSH config alias and must not store passwords or private keys.
+- Do not require root SSH access. Design any SSH path for a restricted account or forced command.
+- Treat Shopify as a separate GraphQL Admin API adapter with explicit scopes and documented token
+  lifecycle. Do not reuse WooCommerce authentication concepts or accept a Shopify account password.
 
 ## Development workflow
 

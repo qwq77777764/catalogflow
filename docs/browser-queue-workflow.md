@@ -14,6 +14,13 @@ The private production workflow proved a useful interaction model:
 
 This makes product selection visual and keeps the AI integration on the operator's computer.
 
+The public design is **official-API-first and user-initiated**, not a marketplace crawler. The page
+button should submit only the selected product identifier/URL and minimal visible context. The local
+source adapter then obtains product facts with credentials the operator received through the
+provider's official API process. It must not crawl result pages, bypass authentication/CAPTCHA,
+evade rate limits, or silently fall back to scraping. If an official API is unavailable, the operator
+must supply structured data they are authorized to use.
+
 The archived Alibaba implementation confirms that the selection control and the receiver were
 separate components. The detail-page Tampermonkey userscript displayed `Send to Alibaba CMD` and
 posted to a loopback `/add` endpoint. The Python CMD process owned the queue and waited for Enter.
