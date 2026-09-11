@@ -77,8 +77,8 @@ Non-secret metadata stays in the user's configuration directory and secrets go t
 Credential Manager, macOS Keychain, or the available Linux keyring. Existing secrets are never
 returned to the page.
 
-WooCommerce, Codex, and Claude profiles can be used now. Supplier API profiles are clearly marked
-as reserved for their planned adapters. See
+WooCommerce, Codex, and Claude profiles can be used now. The CJ source adapter is available as a
+preview for one explicitly selected CJ product; Alibaba/1688 and Zendrop remain planned. See
 [docs/configuration-dashboard.md](docs/configuration-dashboard.md) for storage details, profile
 selection, and failure behavior.
 
@@ -153,6 +153,21 @@ python -m catalogflow product.json --source alibaba-manual --generator claude
 
 The result is written to `output/preview.json`, which is ignored by Git.
 
+### Preview one CJ product through your own API access
+
+Create a CJ profile in `catalogflow configure` with an API key obtained from your own CJ account.
+Then pass one CJ product URL or PID explicitly:
+
+```powershell
+python -m catalogflow "CJ_PRODUCT_URL_OR_PID" --source cj `
+  --supplier-profile "My CJ" --generator codex
+```
+
+The preview adapter exchanges the API key for an access token in memory and calls CJ's official
+single-product detail endpoint. It does not list or crawl the catalog, persist access tokens, log
+raw provider responses, or send CJ credentials to Codex/Claude. Authentication, quota, malformed
+data, and mismatched-product failures stop explicitly. See [docs/cj-adapter.md](docs/cj-adapter.md).
+
 ## The CJ/Alibaba browser-to-CMD workflow
 
 The operator workflow behind CatalogFlow uses three replaceable parts:
@@ -183,10 +198,10 @@ userscript's in-memory closure for that page; it is not written to extension sto
 in the terminal to freeze the queue.
 
 This first collector deliberately sends only `source`, product-detail URL, and page title. It does
-not copy page HTML, cookies, images, prices, variants, or authentication data. The frozen selection
-queue is not yet a normalized product input: the next official supplier adapter will use the chosen
-URL/identifier and the operator's own API authorization to retrieve structured facts. Until that
-adapter ships, continue using normalized JSON for listing generation.
+not copy page HTML, cookies, images, prices, variants, or authentication data. The current collector
+targets Alibaba, so its frozen queue is not yet connected to the CJ adapter. Use a CJ URL/PID with
+`--supplier-profile` for the CJ API preview, or continue using normalized JSON. Alibaba queue
+normalization remains a separate future adapter.
 
 The old private userscript and Python controller were **not copied into this repository** because
 they mixed brittle DOM selectors, local automation, production configuration, and store writes.
@@ -198,7 +213,7 @@ they mixed brittle DOM selectors, local automation, production configuration, an
 |---|---:|---|
 | OpenAI API key | No | Use an already signed-in Codex CLI. Never paste a key into this repo. |
 | Anthropic API key | No | Use an already signed-in Claude Code CLI. Never paste a key into this repo. |
-| CJ API | No for manual input; useful for exact variants/inventory/shipping | Apply through your own legitimate CJ account and follow CJ's current terms. |
+| CJ API | No for manual input; yes for the CJ preview adapter | Apply through your own legitimate CJ account and follow CJ's current terms, points, and quotas. |
 | Alibaba/1688 API | No for manual input; useful for structured catalog data | Apply through your own legitimate Alibaba/1688 account or approved provider and follow its terms. |
 | WooCommerce REST API | No for previews; yes for hidden-draft writes | Create least-privilege credentials in your own store and keep them in local environment variables. |
 

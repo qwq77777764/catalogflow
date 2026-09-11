@@ -60,8 +60,8 @@ Shopify Admin API。为连接填写自己看得懂的名称和备注，再填写
 保存在用户配置目录；真正的密钥进入 Windows Credential Manager、macOS Keychain 或
 Linux 可用的系统 keyring。已保存密钥只显示“已配置”，不会回显原值。
 
-WooCommerce、Codex 与 Claude 连接档案现在即可使用；CJ、Alibaba/1688 和 Zendrop 会明确
-显示“连接器开发中”，不会假装保存后已经能够调用。完整说明见
+WooCommerce、Codex 与 Claude 连接档案现在即可使用；CJ 单商品官方 API adapter 已进入
+预览版，Alibaba/1688 和 Zendrop 仍会明确显示“连接器开发中”。完整说明见
 [docs/configuration-dashboard.md](docs/configuration-dashboard.md)。
 
 CatalogFlow 采用“官方 API 优先”，不是批量爬虫。网页按钮只代表操作者主动选择某个商品；
@@ -130,6 +130,21 @@ python -m catalogflow product.json --source cj --generator codex
 python -m catalogflow product.json --source alibaba-manual --generator claude
 ```
 
+### 用你自己的 CJ API 预览一个商品
+
+先在 `catalogflow configure` 中建立 CJ 档案，填入从你本人 CJ 账号取得的 API Key；然后
+明确传入一个 CJ 商品详情链接或 PID：
+
+```powershell
+python -m catalogflow "CJ商品链接或PID" --source cj `
+  --supplier-profile "我的 CJ" --generator codex
+```
+
+预览版 adapter 只在内存中用 API Key 换取 Access Token，并调用 CJ 官方单商品详情接口。
+它不会遍历商品目录、持久化 Access Token、记录原始响应，也不会把 CJ 凭据发送给
+Codex/Claude。授权失败、配额不足、数据异常或返回了不同商品时都会明确停止。详见
+[docs/cj-adapter.md](docs/cj-adapter.md)。
+
 ## 你记得的“登录 CJ → 点按钮 → CMD 回车”流程
 
 原工作流确实如此：
@@ -158,9 +173,9 @@ Alibaba 商品详情页点击 **Add to CatalogFlow**，输入终端显示的接�
 保留在当前页面油猴脚本的内存闭包中，不写入扩展存储。选完后回到终端按 Enter 冻结队列。
 
 第一版采集器刻意只发送 `source`、商品详情 URL 和页面标题，不发送整页 HTML、Cookie、
-图片、价格、变体或登录信息。冻结的选品队列还不是完整商品 JSON；下一步官方供应商
-adapter 会凭用户自己的 API 授权，根据所选 URL/商品 ID 获取结构化资料。在 adapter 完成前，
-listing 生成仍使用规范化 JSON。
+图片、价格、变体或登录信息。当前采集器面向 Alibaba，因此冻结队列尚未连接 CJ adapter。
+CJ 预览请把一个 CJ URL/PID 配合 `--supplier-profile` 使用；Alibaba 队列归一化仍需要后续
+独立 adapter。规范化 JSON 继续可用。
 
 旧版私人油猴脚本和 Python 控制器没有复制进仓库，因为它们混有脆弱 DOM 选择器、视觉
 点击、生产配置和商店写入。新版协议见
@@ -172,8 +187,8 @@ listing 生成仍使用规范化 JSON。
 
 - **AI API：不需要。** 已登录的 Codex CLI 或 Claude Code CLI 可以直接工作；CatalogFlow
   不索取 OpenAI/Anthropic API Key。
-- **CJ API：手工输入时不需要。** 如果要稳定读取完整变体、库存或运费，应由使用者用
-  自己的合法 CJ 账号申请官方权限，并遵守 CJ 当时的条款、配额和收费。
+- **CJ API：手工输入时不需要，CJ adapter 预览时需要。** 使用者必须用自己的合法 CJ
+  账号申请官方权限，并遵守 CJ 当时的条款、积分、配额和收费。
 - **Alibaba/1688 API：手工输入时不需要。** 自动读取结构化数据时，必须由使用者通过
   自己的 Alibaba/1688 账号或获批准的服务合法申请。
 - **WooCommerce REST API：预览不需要。** 只有创建隐藏草稿时才需要自己商店的最小权限

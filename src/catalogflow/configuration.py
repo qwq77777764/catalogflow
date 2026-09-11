@@ -115,8 +115,8 @@ PROVIDERS: dict[str, dict[str, object]] = {
     "cj": {
         "name": "CJdropshipping API",
         "category": "source",
-        "description": "Reserved for the official CJ source adapter.",
-        "availability": "planned",
+        "description": "Preview adapter for one explicitly selected CJ product.",
+        "availability": "preview",
         "fields": [
             {
                 "name": "api_key",

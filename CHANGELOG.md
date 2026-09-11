@@ -2,6 +2,14 @@
 
 All notable changes are documented here.
 
+## Unreleased
+
+- Added a preview CJ official API source adapter for one explicit CJ product URL or PID.
+- Added in-memory CJ token exchange, fixed-host/no-redirect network enforcement, bounded JSON,
+  redacted provider errors, product-ID matching, and synthetic contract tests.
+- Added `--supplier-profile` so the adapter loads the operator's own CJ API key from the operating-
+  system keyring without sending credentials to a local AI process.
+
 ## 0.4.0 — 2026-09-11
 
 - Added `catalogflow collect`, an authenticated loopback receiver that freezes a unique local queue

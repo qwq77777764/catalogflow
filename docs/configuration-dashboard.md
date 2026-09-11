@@ -69,12 +69,12 @@ change where the operating system stores secrets.
 | Shopify Admin API | Available to reserve settings | Planned GraphQL adapter |
 | Codex CLI | Available | Available; reuses the CLI login |
 | Claude Code CLI | Available | Available; reuses the CLI login |
-| CJdropshipping API | Available to reserve credentials | Planned |
+| CJdropshipping API | Available | Preview; one explicit product URL/PID |
 | Alibaba/1688 Open Platform | Available to reserve credentials | Planned |
 | Zendrop API | Available to reserve credentials | Planned |
 
-The dashboard labels planned connectors clearly. Saving a credential does not pretend that an
-unfinished supplier adapter can already make requests.
+The dashboard labels preview and planned connectors separately. Saving credentials for an
+unfinished Alibaba/1688 or Zendrop adapter does not pretend that it can already make requests.
 
 ## Store publishing paths
 
@@ -126,6 +126,8 @@ automatically. A specific profile can also be selected by its unique label or ID
 python -m catalogflow product.json --source cj --generator codex --ai-profile "My Codex"
 
 python -m catalogflow product.json --source cj --generator codex --draft --yes --store-profile "US WooCommerce"
+
+python -m catalogflow "CJ_PRODUCT_URL_OR_PID" --source cj --supplier-profile "My CJ" --generator codex
 ```
 
 Profile values are loaded only into the short-lived CatalogFlow process. The existing AI child

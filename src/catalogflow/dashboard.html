@@ -47,7 +47,7 @@
     .field { margin-bottom:16px; }
     .provider-note { margin:-5px 0 17px; padding:10px 12px; border-radius:10px; font-size:13px; }
     .available { background:var(--green2); color:var(--green); }
-    .planned { background:var(--amber2); color:var(--amber); }
+    .planned, .preview { background:var(--amber2); color:var(--amber); }
     .secret-wrap { position:relative; }
     .secret-wrap input { padding-right:72px; }
     .reveal { position:absolute; right:8px; top:6px; border:0; background:transparent; color:var(--green);
@@ -144,7 +144,8 @@
         return items.length?`<optgroup label="${label}">${items.map(item=>`<option value="${esc(item.id)}">${esc(item.name)}</option>`).join('')}</optgroup>`:'';}).join(''); }
     function renderProviderFields(values={}, configured=[]) { const provider=providerById($('provider').value); if(!provider)return;
       $('provider-note').className='provider-note '+provider.availability;
-      $('provider-note').textContent=(provider.availability==='available'?'现在可用 · ':'连接器开发中 · ')+provider.description;
+      const availabilityLabel={available:'现在可用',preview:'预览版',planned:'连接器开发中'}[provider.availability]||provider.availability;
+      $('provider-note').textContent=availabilityLabel+' · '+provider.description;
       $('dynamic-fields').innerHTML=provider.fields.map(field=>{ const current=field.secret?'':(values[field.name]||'');
         const configuredHint=field.secret&&configured.includes(field.name)?' · 已保存；留空保持原值':'';
         const input=`<input data-name="${esc(field.name)}" data-secret="${field.secret}" type="${esc(field.type)}" value="${esc(current)}" placeholder="${esc(field.placeholder||'')}" autocomplete="new-password">`;
@@ -159,7 +160,7 @@
     function renderProfiles() { const box=$('profiles'); if(!state.profiles.length){box.innerHTML='<div class="empty">还没有连接。先在左边选择渠道并保存。</div>';return;}
       box.innerHTML=state.profiles.map(profile=>{ const provider=providerById(profile.provider); const secrets=profile.configured_secret_fields.length;
         return `<article class="card"><div class="card-top"><div><h3>${esc(profile.label)}</h3><div class="sub">${esc(provider?.name||profile.provider)}</div></div>${profile.is_default?'<span class="badge ok">默认</span>':''}</div>
-          <div class="badges"><span class="badge ${provider?.availability==='available'?'ok':'wait'}">${provider?.availability==='available'?'连接器可用':'连接器开发中'}</span><span class="badge">${secrets} 项密钥已保存</span></div>
+          <div class="badges"><span class="badge ${provider?.availability==='available'?'ok':'wait'}">${provider?.availability==='available'?'连接器可用':provider?.availability==='preview'?'连接器预览版':'连接器开发中'}</span><span class="badge">${secrets} 项密钥已保存</span></div>
           ${profile.notes?`<p class="notes">${esc(profile.notes)}</p>`:''}<div class="card-actions"><button class="secondary" data-edit="${esc(profile.id)}">编辑</button><button class="danger" data-delete="${esc(profile.id)}">删除</button></div></article>`; }).join('');
       document.querySelectorAll('[data-edit]').forEach(button=>button.onclick=()=>editProfile(button.dataset.edit));
       document.querySelectorAll('[data-delete]').forEach(button=>button.onclick=()=>removeProfile(button.dataset.delete)); }

@@ -19,7 +19,7 @@ from .generators import (
 )
 from .models import ImportMode, ImportRequest
 from .pipeline import import_products
-from .providers import JsonFileSource
+from .providers import CjApiError, CjApiSource, JsonFileSource
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -30,11 +30,15 @@ def build_parser() -> argparse.ArgumentParser:
             "'catalogflow collect' for browser selections."
         ),
     )
-    parser.add_argument("product_json", nargs="?", help="Authorized normalized product JSON")
+    parser.add_argument(
+        "product_reference",
+        nargs="?",
+        help="Authorized normalized JSON, or one CJ URL/PID with --supplier-profile",
+    )
     parser.add_argument(
         "--source",
         choices=("cj", "alibaba-manual"),
-        help="Origin represented by the input file",
+        help="Supplier represented by the authorized input",
     )
     parser.add_argument("--output", default="output/preview.json")
     parser.add_argument(
@@ -65,6 +69,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--store-profile",
         help="WooCommerce connection profile ID or unique label used by --draft",
+    )
+    parser.add_argument(
+        "--supplier-profile",
+        help="Authorized supplier API profile; currently supported for --source cj",
     )
     return parser
 
@@ -129,12 +137,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.doctor:
         print_doctor_report()
         return 0
-    if not args.product_json or not args.source:
-        parser.error("product_json and --source are required unless --doctor is used")
+    if not args.product_reference or not args.source:
+        parser.error("product_reference and --source are required unless --doctor is used")
     if args.draft and not args.yes:
         raise SystemExit("Refusing store write: --draft also requires --yes")
     if args.ai_profile and args.generator == "deterministic":
         parser.error("--ai-profile requires --generator codex or --generator claude")
+    if args.supplier_profile and args.source != "cj":
+        parser.error("--supplier-profile currently requires --source cj")
     if args.ai_profile:
         _load_profile(args.ai_profile, args.generator)
     elif args.generator in {"codex", "claude"}:
@@ -151,9 +161,17 @@ def main(argv: list[str] | None = None) -> int:
         "deterministic": DeterministicListingGenerator,
     }
     generator = generators[args.generator]()
+    if args.supplier_profile:
+        _load_profile(args.supplier_profile, "cj")
+        try:
+            source_adapter = CjApiSource.from_environment()
+        except CjApiError as exc:
+            raise SystemExit(str(exc)) from None
+    else:
+        source_adapter = JsonFileSource(args.source)
     report = import_products(
-        [ImportRequest(source=args.source, reference=args.product_json)],
-        sources={args.source: JsonFileSource(args.source)},
+        [ImportRequest(source=args.source, reference=args.product_reference)],
+        sources={args.source: source_adapter},
         generator=generator,
         mode=mode,
         publisher=publisher,

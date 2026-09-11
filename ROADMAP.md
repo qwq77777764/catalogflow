@@ -10,13 +10,19 @@ CatalogFlow is developed in small, auditable vertical slices.
 - Store only a canonical selected URL and page title; never accept cookies, page HTML, or store/API
   credentials at the browser boundary.
 
-## Next — Official supplier normalization
+## In preview — CJ official supplier normalization
 
-- Add the first official supplier API adapter with injectable transport and synthetic contract
-  tests.
-- Convert selected product identifiers into the existing normalized facts, variants, and images.
+- Exchange the operator's CJ API key for an in-memory access token and fetch one explicit PID.
+- Convert official CJ detail data into normalized facts, variants, USD costs, and images.
+- Cover the network boundary with an injectable transport and synthetic contract tests.
 - Stop explicitly on missing authorization, provider quota exhaustion, or incomplete required data;
   never fall back to scraping.
+
+## Next
+
+- Validate the preview adapter against one operator-selected live CJ product.
+- Connect a narrowly scoped CJ browser selector or frozen queue to the same adapter.
+- Add shipping-cost calculation as a separate explicit API step.
 
 ## Shipped in 0.3 — Local connection center
 

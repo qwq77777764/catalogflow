@@ -15,6 +15,7 @@ def test_provider_catalog_groups_store_source_and_local_ai_connections() -> None
     categories = {definition["category"] for definition in PROVIDERS.values()}
     assert categories == {"store", "source", "ai"}
     assert PROVIDERS["woocommerce"]["availability"] == "available"
+    assert PROVIDERS["cj"]["availability"] == "preview"
     assert PROVIDERS["wordpress_ssh"]["availability"] == "planned"
     assert PROVIDERS["shopify"]["availability"] == "planned"
 
