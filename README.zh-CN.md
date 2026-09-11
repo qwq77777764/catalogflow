@@ -1,27 +1,157 @@
-# CatalogFlow
+# CatalogFlow 中文说明
 
-CatalogFlow 是一条安全优先、需要人工确认的商品目录流水线。它把获得授权的供应商商品事实，转换为结构统一的 WooCommerce 隐藏草稿。
+**把你有权使用的 CJ 或 Alibaba/1688 商品资料和图片，交给本机已登录的 Codex 或
+Claude Code，生成可审核的原创 WooCommerce 商品草稿。**
 
-当前公开版刻意不包含：生产密钥、供应商网页存档、客户数据、商店导出文件以及自动公开上架功能。
+[English README](README.md) · [本地 AI 接入](docs/local-ai.md) ·
+[Agent 工作流](docs/agent-workflow.md) · [浏览器到 CMD 队列](docs/browser-queue-workflow.md)
 
-## 核心保证
+这个项目来自一套真实使用过的半自动流程：在已经登录的供应商网页挑选商品，点击
+“丢入本地队列”，链接、标题和可见图片进入同一台电脑上的队列；回到 CMD 按 Enter，
+本地 Codex 或 Claude Code 根据已核实事实和图片重写 listing；人工检查后，最多只创建
+隐藏草稿。
 
-- 默认只在本地生成预览，不写商店。
-- 写入 WooCommerce 必须显式同时使用 `--draft --yes`。
-- WooCommerce 适配器只能创建 `draft + hidden`，不能公开发布。
-- 示例数据全部为合成数据，不需要 CJ、Alibaba、WooCommerce 或 AI 账号。
-- 凭据只从环境变量读取，不能写入商品 JSON。
-- 不提供批量网页爬虫；只处理用户拥有、获授权或通过官方 API 获得的数据。
+公开仓库是重新整理的干净版本，不包含任何私人 API、账号、Cookie、服务器地址、商店
+数据、客户数据、供应商页面存档或自动公开发布代码。
 
-## 本地演示
+## 最大优势
 
-```bash
+- **AI 不需要单独填写 API Key。** 可以直接复用本机 Codex CLI 或 Claude Code CLI
+  自己保存的登录状态。
+- **不需要先让 Codex/Claude 帮你改项目。** 安装 CatalogFlow 后，用
+  `--generator codex` 或 `--generator claude` 即可选择；`--doctor` 会自动检查命令。
+- **可以看授权商品图后写 listing。** 最多 5 张公网 HTTPS 图片只下载到临时目录；
+  程序会拒绝 localhost、内网地址、带账号密码的 URL 和过大的文件。
+- **AI 不决定售价。** 成本不发送给模型，售价由本地固定公式计算。
+- **默认不写商店。** 普通运行只生成 `output/preview.json`；同时提供 `--draft --yes`
+  才会创建 `draft + hidden` 商品。
+- **供应商可替换。** CJ、Alibaba 手工数据、Codex、Claude 和离线演示都使用同一套结构。
+
+“本地 Codex/Claude”表示 CatalogFlow 调用你电脑上的 `codex` 或 `claude` 命令，登录和
+用量由对应 CLI 管理。它不等于完全离线：除非你另外配置受支持的本地模型，否则商品
+事实与授权图片仍会通过你的账号发送给对应模型服务。
+
+## 第一步：安装 CatalogFlow
+
+需要 Python 3.11+ 和 Git。
+
+```powershell
+git clone https://github.com/qwq77777764/catalogflow.git
+cd catalogflow
 python -m venv .venv
-.venv/Scripts/activate
+.venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
-catalogflow examples/synthetic_product.json --source cj
-pytest
 ```
 
-完整说明以英文 [README](README.md) 为准。
+macOS/Linux 激活虚拟环境使用：`source .venv/bin/activate`。
 
+## 第二步：连接本机 Codex 或 Claude
+
+二选一即可，不需要两个都装。
+
+### 使用 Codex CLI
+
+按照 [OpenAI 官方 Codex CLI 文档](https://developers.openai.com/codex/cli/)安装；第一次
+运行 `codex`，选择 **Sign in with ChatGPT** 完成登录，然后退出。以后 CatalogFlow 会
+自己调用 `codex exec`，不需要再把项目交给 Codex 修改一次。
+
+```powershell
+python -m catalogflow --doctor
+python -m catalogflow examples/synthetic_product.json --source cj --generator codex
+```
+
+### 使用 Claude Code CLI
+
+按照 [Anthropic 官方安装文档](https://code.claude.com/docs/en/setup)安装；第一次运行
+`claude` 并用支持的 Claude/Anthropic 账号登录。CatalogFlow 会使用非交互、JSON Schema
+校验模式，同时禁用 shell、编辑、写文件和联网工具。
+
+```powershell
+python -m catalogflow --doctor
+python -m catalogflow examples/synthetic_product.json --source cj --generator claude
+```
+
+`--doctor` 只执行版本检查，不会发起 AI 请求。如果 CLI 不在 PATH，可把完整可执行文件
+路径放入 `CATALOGFLOW_CODEX_COMMAND` 或 `CATALOGFLOW_CLAUDE_COMMAND`。完整排错见
+[docs/local-ai.md](docs/local-ai.md)。
+
+## 第三步：准备商品 JSON
+
+输入必须来自你自己拥有、已获授权、手工导出、登录页面合法采集或官方 API 获得的资料。
+商品 JSON 不能包含 Cookie、API Key、账号密码或客户信息。
+
+```json
+{
+  "source_id": "your-local-reference",
+  "title": "页面上可见的商品标题",
+  "currency": "USD",
+  "variants": [
+    {
+      "sku": "YOUR-SKU",
+      "cost": 8.5,
+      "attributes": {"finish": "walnut"}
+    }
+  ],
+  "images": ["https://public-image-host.example/authorized-image.jpg"],
+  "facts": {"material": "已经核实的材质", "power": "已经核实的供电方式"}
+}
+```
+
+生成本地预览：
+
+```powershell
+python -m catalogflow product.json --source cj --generator codex
+# 或
+python -m catalogflow product.json --source alibaba-manual --generator claude
+```
+
+## 你记得的“登录 CJ → 点按钮 → CMD 回车”流程
+
+原工作流确实如此：
+
+```text
+已登录的 CJ / Alibaba 页面
+        │ 点击“丢入本地队列”
+        ▼
+127.0.0.1 本地接收器 → 队列 → CMD 按 Enter
+                                  │
+                                  ▼
+                         Codex / Claude
+                                  │
+                                  ▼
+                       校验 → 预览 → 隐藏草稿
+```
+
+但旧版油猴脚本和 Python 控制器混有网站 DOM 细节、视觉点击、生产配置和商店写入，不能
+直接原样公开。安全版的交互、边界和重建计划见
+[docs/browser-queue-workflow.md](docs/browser-queue-workflow.md)。公开接收器完成前，下载者
+应先使用规范化 JSON，不能复制私人旧脚本。
+
+## CJ、Alibaba/1688 与 WooCommerce API
+
+需要分清两类接口：
+
+- **AI API：不需要。** 已登录的 Codex CLI 或 Claude Code CLI 可以直接工作；CatalogFlow
+  不索取 OpenAI/Anthropic API Key。
+- **CJ API：手工输入时不需要。** 如果要稳定读取完整变体、库存或运费，应由使用者用
+  自己的合法 CJ 账号申请官方权限，并遵守 CJ 当时的条款、配额和收费。
+- **Alibaba/1688 API：手工输入时不需要。** 自动读取结构化数据时，必须由使用者通过
+  自己的 Alibaba/1688 账号或获批准的服务合法申请。
+- **WooCommerce REST API：预览不需要。** 只有创建隐藏草稿时才需要自己商店的最小权限
+  凭据，并且只能保存在本机环境变量中。
+
+本项目不提供、转卖、共享或绕过任何供应商 API 权限。
+
+## Agent 工作流
+
+[docs/agent-workflow.md](docs/agent-workflow.md) 已公开去隐私化的规则，包括：授权检查、
+事实归一化、图片分析、原创标题/描述/标签、禁用品牌与夸大声明、固定定价、JSON 校验、
+本地预览、人工确认和隐藏草稿边界。供 Codex/Claude 维护此仓库时遵循的规则在
+[AGENTS.md](AGENTS.md)。
+
+## 安全
+
+不要在 Issue、商品 JSON 或 Git 提交中放入 API Key、Token、Cookie、商店地址、客户
+记录、原始供应商响应或生产日志。详见 [SECURITY.md](SECURITY.md)。
+
+许可证：[MIT](LICENSE)。

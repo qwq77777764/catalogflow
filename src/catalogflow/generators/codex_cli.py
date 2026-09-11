@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 
+from ..media import materialize_authorized_images
 from ..models import Listing, Product
 from ..pricing import PricingPolicy
+from .common import build_listing_prompt, find_cli, safe_cli_environment
 
 
 class CodexCliListingGenerator:
@@ -28,13 +29,16 @@ class CodexCliListingGenerator:
         self.policy = policy or PricingPolicy()
 
     def generate(self, product: Product) -> Listing:
-        executable = shutil.which("codex") or shutil.which("codex.cmd")
+        executable = find_cli("codex", "CATALOGFLOW_CODEX_COMMAND")
         if not executable:
-            raise RuntimeError("Codex CLI was not found on PATH")
+            raise RuntimeError(
+                "Codex CLI was not found. Run 'catalogflow --doctor' and see docs/local-ai.md"
+            )
 
         schema = Path(__file__).parents[1] / "schemas" / "listing.schema.json"
         with tempfile.TemporaryDirectory(prefix="catalogflow_codex_") as temp_dir:
             output = Path(temp_dir) / "listing.json"
+            image_paths = materialize_authorized_images(product.images, temp_dir)
             command = [
                 executable,
                 "exec",
@@ -49,6 +53,8 @@ class CodexCliListingGenerator:
             ]
             if self.model:
                 command.extend(["-m", self.model])
+            for image_path in image_paths:
+                command.extend(["-i", str(image_path)])
             command.append("-")
             process = subprocess.run(  # noqa: S603 - fixed executable and argument list
                 command,
@@ -59,6 +65,7 @@ class CodexCliListingGenerator:
                 capture_output=True,
                 timeout=self.timeout_seconds,
                 check=False,
+                env=safe_cli_environment(),
             )
             if process.returncode != 0:
                 raise RuntimeError(f"Codex CLI exited with status {process.returncode}")
@@ -77,18 +84,4 @@ class CodexCliListingGenerator:
 
     @staticmethod
     def build_prompt(product: Product) -> str:
-        facts = {
-            "title": product.title,
-            "currency": product.currency,
-            "facts": product.facts,
-            "variant_attributes": [variant.attributes for variant in product.variants],
-        }
-        return (
-            "Create original, brand-neutral English merchandising copy from the authorized "
-            "product facts below. Return only JSON matching the supplied schema. Do not mention "
-            "supplier platforms, dropshipping, wholesale, shipping promises, medical claims, "
-            "brands, licenses, or facts not present in the input. Use 'Not specified' when a "
-            "material, measurement, or power detail is unknown.\n\n"
-            + json.dumps(facts, ensure_ascii=False, indent=2)
-        )
-
+        return build_listing_prompt(product)

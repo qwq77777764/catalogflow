@@ -4,102 +4,194 @@
 [![Secret scan](https://github.com/qwq77777764/catalogflow/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/qwq77777764/catalogflow/actions/workflows/secret-scan.yml)
 [![CodeQL](https://github.com/qwq77777764/catalogflow/actions/workflows/codeql.yml/badge.svg)](https://github.com/qwq77777764/catalogflow/actions/workflows/codeql.yml)
 
-CatalogFlow is a safety-first, human-approved pipeline that turns authorized supplier
-product facts into consistent WooCommerce drafts.
+**Turn authorized CJ or Alibaba product facts and images into reviewable,
+original WooCommerce listing drafts with a locally installed Codex or Claude Code CLI.**
 
-It grew out of a private workflow used to process thousands of catalog records from
-multiple suppliers. The open-source edition deliberately removes production secrets,
-stored supplier pages, customer data, and automatic public publishing.
+[中文说明](README.zh-CN.md) · [Local AI setup](docs/local-ai.md) ·
+[Agent workflow](docs/agent-workflow.md) · [Browser-to-CMD workflow](docs/browser-queue-workflow.md)
 
-> **Alpha:** the current release provides a provider-neutral core, deterministic offline
-> previews, and an opt-in WooCommerce hidden-draft adapter. It does not scrape supplier
-> websites and never publishes products publicly.
+CatalogFlow grew out of a working merchant workflow: select a product while logged in to a
+supplier site, send its authorized URL and visible facts to a queue on the same computer,
+press Enter in the CMD window, let a local AI CLI rewrite the listing from the product facts
+and images, review the result, and only then create a hidden store draft.
 
-## Why CatalogFlow
+The public repository is a clean-room extraction. It contains no operator credentials,
+supplier-page archives, customer data, production store records, or automatic public
+publishing.
 
-- One provider-neutral product model for CJ and user-authorized Alibaba exports.
-- Deterministic pricing and listing validation that can be reviewed and tested.
-- `dry-run` is the default; external writes require both `--draft` and `--yes`.
-- WooCommerce output is hard-coded to `status=draft` and
-  `catalog_visibility=hidden`.
-- Credentials come from environment variables and are never accepted in product files.
-- Synthetic fixtures run without supplier, store, or AI accounts.
+## Why it is different
 
-## Five-minute local demo
+- **No OpenAI or Anthropic API key is required.** CatalogFlow can reuse the login already
+  managed by an installed Codex CLI or Claude Code CLI.
+- **Image-aware listing generation.** Up to five operator-authorized public HTTPS product
+  images are downloaded into a temporary directory, checked against private-network URLs,
+  and supplied to the selected local CLI for analysis.
+- **The agent is provider-neutral.** Codex, Claude Code, and the deterministic offline demo
+  all return the same validated listing shape.
+- **Pricing remains deterministic.** The AI never sees source costs and does not decide final
+  prices.
+- **Safe by default.** Every run starts as a local preview. A WooCommerce write requires both
+  `--draft` and `--yes`, and the adapter can create only `draft + hidden` products.
+- **No bulk scraper is included.** Inputs must be owned by the operator, explicitly exported,
+  captured from an authorized logged-in session, or obtained through an official API.
 
-```bash
+## What “local AI” means
+
+CatalogFlow starts the `codex` or `claude` command installed on **your computer**. It does not
+read API keys from this repository and does not ask an agent to modify CatalogFlow before the
+first run. The CLI itself handles account sign-in and usage.
+
+This is not the same as offline inference: unless you configure a supported local model
+provider separately, the chosen CLI sends the supplied product facts and authorized images
+to its model service under your account. Do not process images or data you are not allowed to
+send.
+
+## Install CatalogFlow
+
+Python 3.11 or newer and Git are required.
+
+```powershell
+git clone https://github.com/qwq77777764/catalogflow.git
+cd catalogflow
 python -m venv .venv
-.venv/Scripts/activate
+.venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
-catalogflow examples/synthetic_product.json --source cj
-pytest
 ```
 
-The preview is written to `output/preview.json`, which is ignored by Git.
+macOS/Linux activation is `source .venv/bin/activate`.
 
-To opt into structured generation with an installed and authenticated Codex CLI:
+## Connect Codex or Claude Code without an API key
 
-```bash
-catalogflow examples/synthetic_product.json --source cj --generator codex
+Choose **one** provider. You do not need both.
+
+### Option A — Codex CLI
+
+Install Codex using the [official Codex CLI guide](https://developers.openai.com/codex/cli/),
+then run `codex` once and choose **Sign in with ChatGPT**. Exit after sign-in; CatalogFlow will
+call `codex exec` itself.
+
+```powershell
+python -m catalogflow --doctor
+python -m catalogflow examples/synthetic_product.json --source cj --generator codex
 ```
 
-Codex receives normalized merchandising facts, not supplier credentials, source IDs,
-store credentials, or cost values. The deterministic pricing policy runs locally after
-generation.
+### Option B — Claude Code CLI
 
-## Explicit hidden-draft write
+Install Claude Code using the
+[official setup guide](https://code.claude.com/docs/en/setup), then run `claude` once and sign
+in with a supported Claude/Anthropic account. CatalogFlow uses Claude's non-interactive,
+schema-validated print mode and disables shell, edit, write, and web tools.
 
-Set the three `WOOCOMMERCE_*` environment variables shown in `.env.example`, review the
-local input, then run:
-
-```bash
-catalogflow product.json --source cj --draft --yes
+```powershell
+python -m catalogflow --doctor
+python -m catalogflow examples/synthetic_product.json --source cj --generator claude
 ```
 
-This interface can only create a hidden draft. Public publishing remains a separate,
-manual store-admin decision.
+`--doctor` only runs `--version`; it makes no model request. If a command is installed outside
+`PATH`, set `CATALOGFLOW_CODEX_COMMAND` or `CATALOGFLOW_CLAUDE_COMMAND` to that executable's
+full path. See [docs/local-ai.md](docs/local-ai.md) for Windows, macOS, Linux, authentication,
+PATH, privacy, and troubleshooting details.
 
-## Architecture
+## Prepare an authorized product input
+
+CatalogFlow currently consumes normalized JSON. Use a manual export, your own authorized
+browser collector, or an official supplier API. Never put cookies or credentials in this file.
+
+```json
+{
+  "source_id": "your-local-reference",
+  "title": "Product title visible to you",
+  "currency": "USD",
+  "variants": [
+    {
+      "sku": "YOUR-SKU",
+      "cost": 8.5,
+      "attributes": {"finish": "walnut"}
+    }
+  ],
+  "images": ["https://public-image-host.example/authorized-image.jpg"],
+  "facts": {"material": "verified material", "power": "verified power source"}
+}
+```
+
+Run a local preview:
+
+```powershell
+python -m catalogflow product.json --source cj --generator codex
+# or
+python -m catalogflow product.json --source alibaba-manual --generator claude
+```
+
+The result is written to `output/preview.json`, which is ignored by Git.
+
+## The CJ/Alibaba browser-to-CMD workflow
+
+The operator workflow behind CatalogFlow uses three replaceable parts:
 
 ```text
-authorized product data
-        |
-        v
-SourceAdapter -> Product -> ListingGenerator -> validation -> ImportReport
-                                                        |
-                                           dry-run -----+----- hidden draft
+logged-in CJ/Alibaba page
+        │ click “Add to local queue”
+        ▼
+127.0.0.1 browser collector → local queue → press Enter in CMD
+                                              │
+                                              ▼
+                           Codex CLI / Claude Code CLI
+                                              │
+                                              ▼
+                        validate → preview → hidden draft
 ```
 
-The primary interface is:
+The old private userscript and Python controller are **not copied into this repository**:
+they mixed site-specific DOM selectors, local automation, production configuration, and store
+writes. [docs/browser-queue-workflow.md](docs/browser-queue-workflow.md) documents the proven
+interaction and the security requirements for the clean public replacement. Until that
+replacement ships, use normalized JSON rather than copying the private script.
 
-```python
-import_products(requests, sources=..., generator=..., mode="dry-run") -> ImportReport
+## Which APIs are optional?
+
+| Connection | Required for a local preview? | Rule |
+|---|---:|---|
+| OpenAI API key | No | Use an already signed-in Codex CLI. Never paste a key into this repo. |
+| Anthropic API key | No | Use an already signed-in Claude Code CLI. Never paste a key into this repo. |
+| CJ API | No for manual input; useful for exact variants/inventory/shipping | Apply through your own legitimate CJ account and follow CJ's current terms. |
+| Alibaba/1688 API | No for manual input; useful for structured catalog data | Apply through your own legitimate Alibaba/1688 account or approved provider and follow its terms. |
+| WooCommerce REST API | No for previews; yes for hidden-draft writes | Create least-privilege credentials in your own store and keep them in local environment variables. |
+
+CatalogFlow does not distribute, broker, share, or help bypass access to supplier APIs. API
+approval, account eligibility, data rights, quotas, and fees belong to each user and provider.
+
+## Optional hidden-draft write
+
+Set the three `WOOCOMMERCE_*` variables shown in `.env.example` in your local environment,
+review the preview, and then explicitly acknowledge the write:
+
+```powershell
+python -m catalogflow product.json --source cj --generator codex --draft --yes
 ```
 
-Complexity stays behind that small interface. The seams that genuinely vary are
-`SourceAdapter`, `ListingGenerator`, and `StorePublisher`. Tests use local adapters; a
-store write cannot happen accidentally in the default mode.
+This interface cannot publish publicly. Public publication remains a separate manual action in
+the store administrator.
 
-See [docs/architecture.md](docs/architecture.md) and
-[docs/migration-from-private-workflow.md](docs/migration-from-private-workflow.md).
-Planned work is tracked in [ROADMAP.md](ROADMAP.md).
+## Agent contract
 
-## Supplier and data policy
+The reusable listing and image-analysis rules are published in
+[docs/agent-workflow.md](docs/agent-workflow.md). The short version:
 
-CatalogFlow is for data you own, are authorized to process, or obtain through an official
-API under its applicable terms. This repository does not include copied supplier pages,
-images, cookies, access tokens, production exports, or a bulk scraper. The
-`alibaba-manual` source accepts normalized facts explicitly supplied by the operator.
+1. accept only authorized product facts and images;
+2. never invent dimensions, material, certification, or safety claims;
+3. produce original, brand-neutral English copy in the JSON schema;
+4. keep supplier names, source URLs, IDs, costs, and credentials out of public copy;
+5. calculate prices locally after generation;
+6. stop at preview unless a human explicitly requests a hidden draft.
 
-## Security
+Repository-level instructions for Codex and Claude contributors are in [AGENTS.md](AGENTS.md).
 
-Please read [SECURITY.md](SECURITY.md). Never open an issue containing a token, store URL,
-customer record, raw supplier response, or production log.
+## Security and contributing
 
-## Contributing
-
-Small merchants should be able to run the complete test suite without any external
-account. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Read [SECURITY.md](SECURITY.md) before adding providers or browser helpers. Never open a public
+issue containing a token, store URL, customer record, raw supplier response, or production log.
+Small, testable contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) and
+[ROADMAP.md](ROADMAP.md).
 
 ## License
 

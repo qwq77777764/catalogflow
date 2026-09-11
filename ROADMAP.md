@@ -7,6 +7,7 @@ CatalogFlow is developed in small, auditable vertical slices.
 - Add a CJ official-API adapter with injectable transport and contract tests.
 - Publish the normalized product JSON specification.
 - Add redacted import diagnostics that never contain credentials or raw responses.
+- Stabilize image-assisted Codex and Claude generation across supported CLI releases.
 
 ## 0.3 — Reviewable drafts
 
@@ -19,10 +20,10 @@ CatalogFlow is developed in small, auditable vertical slices.
 - Replace legacy unauthenticated localhost helpers with per-session authentication.
 - Enforce exact origin allowlists, payload limits, rate limits, and single-task execution.
 - Permit image downloads only from configured public hosts and reject private networks.
+- Preserve the proven select-in-browser, review-in-terminal, press-Enter-to-process interaction.
 
 ## Later
 
-- Optional image-assisted Codex generation with bounded downloads.
 - Additional store and registry adapters driven by contributor demand.
 - Signed releases and a documented compatibility policy.
 
