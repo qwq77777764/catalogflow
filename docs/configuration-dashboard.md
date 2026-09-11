@@ -139,7 +139,7 @@ The historical Alibaba workflow used two separate pieces:
    to a loopback URL;
 2. a Python process received the item, managed the queue, and waited for Enter in CMD.
 
-The configuration dashboard replaces neither piece yet. It is the secure place where future queue
-ports, allowed channels, and provider profiles will be managed. The hardened public collector and
-receiver remain a separately tracked implementation described in
+The configuration dashboard replaces neither piece. The hardened selector and receiver now ship as
+the separate `catalogflow collect` command, while the dashboard manages provider and store profiles.
+This separation prevents a page helper from ever receiving store or supplier API credentials. See
 [browser-queue-workflow.md](browser-queue-workflow.md).

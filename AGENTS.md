@@ -37,8 +37,8 @@ These rules apply to Codex, Claude Code, and human contributors working in this 
 ## Browser bridge
 
 - Do not reintroduce an unauthenticated localhost endpoint.
-- A future receiver must bind only to loopback, use a per-session token, exact origin allowlists,
-  schema/body/queue/rate limits, redacted logs, and an explicit Enter-to-process boundary.
+- The receiver must bind only to loopback, use a per-session token, exact origin allowlists,
+  schema/body/queue/rate limits, redacted logs, and an explicit Enter-to-freeze boundary.
 - Never collect browser cookies, passwords, authorization headers, payment data, messages, or raw
   page dumps.
 - Site-specific selectors must fail closed and be covered by sanitized fixtures.
@@ -69,5 +69,5 @@ Tests must not require real supplier, AI, or WooCommerce credentials. Mock subpr
 boundaries. Keep failures isolated per item and diagnostics free of raw sensitive payloads.
 
 When behavior changes, update both `README.md` and `README.zh-CN.md` plus the relevant document in
-`docs/`. Do not claim that a planned browser collector, supplier adapter, image generator, or store
+`docs/`. Do not claim that a planned supplier adapter, image generator, or store
 integration exists before its tested implementation is included.

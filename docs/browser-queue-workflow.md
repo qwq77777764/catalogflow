@@ -29,19 +29,37 @@ division: a minimal browser collector plus a locally authenticated CatalogFlow r
 
 ## Current public status
 
-The clean public release currently starts from a normalized product JSON file. A hardened browser
-collector is planned but is not yet shipped. There is no undocumented command that downloaders must
-ask Codex or Claude to create for them.
+The hardened Alibaba selector and loopback receiver ship in v0.4.0. Start them with:
+
+```powershell
+catalogflow collect
+```
+
+The command binds to `127.0.0.1:8766` by default, generates a fresh high-entropy token, prints the
+local userscript installation URL, and waits for Enter. The userscript runs only on
+`https://www.alibaba.com/product-detail/*`, asks for the local URL/token at runtime, and keeps the
+token only in memory for that page.
+
+Each accepted payload contains exactly four fields: schema version, source, canonical product URL,
+and page title. Query strings and fragments are removed. Duplicate URLs are idempotent. The receiver
+rejects unexpected fields, cookies/authorization headers, foreign origins, non-detail URLs,
+credentialed URLs, bodies over 16 KiB, more than 30 requests per minute, and queues over 100 items.
+The queue is stored outside the repository with a unique session filename and restrictive
+permissions where supported.
+
+Pressing Enter freezes the selection queue and stops the receiver. It does not yet call an AI or
+write to a store: an official provider adapter must first turn each selected identifier into the
+normalized facts/variants/images expected by the existing preview pipeline.
 
 The visual connection dashboard is shipped separately. It configures provider profiles and stores
-credentials safely; it does not yet add a selection button to Alibaba pages.
+credentials safely; the collector command owns the page button and session queue.
 
 The old userscripts and Python controller were not copied because they combine site-specific DOM
 selectors, browser automation, local unauthenticated endpoints, production configuration, direct
 store writes, and private operational assumptions. Publishing that code unchanged would be unsafe
 and brittle.
 
-## Required design for the public bridge
+## Enforced design for the public bridge
 
 Any public replacement must satisfy all of these requirements before release:
 
@@ -52,8 +70,8 @@ Any public replacement must satisfy all of these requirements before release:
 - accept a small versioned JSON schema with strict body and field limits;
 - reject cookies, authorization headers, passwords, API keys, customer data, and raw HTML dumps;
 - rate-limit requests, cap queue length, and process only one explicit batch at a time;
-- accept only configured public HTTPS image hosts and re-check every redirect against private and
-  non-global network ranges;
+- do not accept images at this selection boundary; authorized image URLs belong to the later
+  official provider-normalization step and retain the existing private-network protections;
 - write the queue to an ignored local data directory with restrictive permissions;
 - make Enter an explicit processing boundary and show a preview before any store write;
 - default to local preview and preserve the hidden-draft-only store invariant;
@@ -72,7 +90,7 @@ Users who need those fields must obtain the relevant official API access through
 account and follow the provider's current terms, quotas, and fees. CatalogFlow will not bundle,
 share, resell, emulate, or bypass supplier credentials.
 
-## Intended future interaction
+## Intended complete interaction
 
 The future bridge should preserve the original simple experience:
 
@@ -81,6 +99,5 @@ start local receiver → open authorized supplier page → add selected items
 → review terminal queue → press Enter → generate → validate → preview
 ```
 
-Command names and browser package instructions will be documented only when the hardened receiver
-and collector are implemented and tested. Until then, use the normalized JSON path described in the
-README.
+The first three steps now work. Official provider normalization is the next vertical slice; until it
+ships, use the normalized JSON path described in the README for generation and preview.

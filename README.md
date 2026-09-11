@@ -12,7 +12,7 @@ original WooCommerce listing drafts with a locally installed Codex or Claude Cod
 [Agent workflow](docs/agent-workflow.md) · [Browser-to-CMD workflow](docs/browser-queue-workflow.md)
 
 CatalogFlow grew out of a working merchant workflow: select a product while logged in to a
-supplier site, send its authorized URL and visible facts to a queue on the same computer,
+supplier site, send its URL and page title to a queue on the same computer,
 press Enter in the CMD window, let a local AI CLI rewrite the listing from the product facts
 and images, review the result, and only then create a hidden store draft.
 
@@ -35,8 +35,8 @@ publishing.
   prices.
 - **Safe by default.** Every run starts as a local preview. A WooCommerce write requires both
   `--draft` and `--yes`, and the adapter can create only `draft + hidden` products.
-- **No bulk scraper is included.** Inputs must be owned by the operator, explicitly exported,
-  captured from an authorized logged-in session, or obtained through an official API.
+- **No bulk scraper is included.** Product facts must be operator-supplied structured data,
+  an explicit authorized export, or data obtained through the operator's official API access.
 
 ## What “local AI” means
 
@@ -122,8 +122,9 @@ PATH, privacy, and troubleshooting details.
 
 ## Prepare an authorized product input
 
-CatalogFlow currently consumes normalized JSON. Use a manual export, your own authorized
-browser collector, or an official supplier API. Never put cookies or credentials in this file.
+CatalogFlow currently consumes normalized JSON. Use operator-supplied structured data, an explicit
+authorized export, or an official supplier API. The browser selector queues an identifier/URL; it
+does not manufacture missing product facts. Never put cookies or credentials in this file.
 
 ```json
 {
@@ -169,11 +170,27 @@ logged-in CJ/Alibaba page
                         validate → preview → hidden draft
 ```
 
-The old private userscript and Python controller are **not copied into this repository**:
-they mixed site-specific DOM selectors, local automation, production configuration, and store
-writes. [docs/browser-queue-workflow.md](docs/browser-queue-workflow.md) documents the proven
-interaction and the security requirements for the clean public replacement. Until that
-replacement ships, use normalized JSON rather than copying the private script.
+The clean public Alibaba selector and authenticated local receiver now ship with CatalogFlow.
+
+```powershell
+python -m catalogflow collect
+```
+
+The command prints a local userscript installation URL, a one-time session token, and the queue
+file path. Install the script in Tampermonkey, open an Alibaba product-detail page, click
+**Add to CatalogFlow**, and enter the printed receiver URL and token. The token remains only in the
+userscript's in-memory closure for that page; it is not written to extension storage. Press Enter
+in the terminal to freeze the queue.
+
+This first collector deliberately sends only `source`, product-detail URL, and page title. It does
+not copy page HTML, cookies, images, prices, variants, or authentication data. The frozen selection
+queue is not yet a normalized product input: the next official supplier adapter will use the chosen
+URL/identifier and the operator's own API authorization to retrieve structured facts. Until that
+adapter ships, continue using normalized JSON for listing generation.
+
+The old private userscript and Python controller were **not copied into this repository** because
+they mixed brittle DOM selectors, local automation, production configuration, and store writes.
+[docs/browser-queue-workflow.md](docs/browser-queue-workflow.md) documents the new public contract.
 
 ## Which APIs are optional?
 

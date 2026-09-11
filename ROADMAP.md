@@ -2,6 +2,22 @@
 
 CatalogFlow is developed in small, auditable vertical slices.
 
+## Shipped in 0.4 — Hardened browser selection
+
+- Provide a narrowly matched Alibaba Tampermonkey selector and authenticated loopback receiver.
+- Enforce one-time session authentication, exact origin/URL rules, payload/rate/queue limits, and
+  an explicit Enter-to-freeze boundary.
+- Store only a canonical selected URL and page title; never accept cookies, page HTML, or store/API
+  credentials at the browser boundary.
+
+## Next — Official supplier normalization
+
+- Add the first official supplier API adapter with injectable transport and synthetic contract
+  tests.
+- Convert selected product identifiers into the existing normalized facts, variants, and images.
+- Stop explicitly on missing authorization, provider quota exhaustion, or incomplete required data;
+  never fall back to scraping.
+
 ## Shipped in 0.3 — Local connection center
 
 - Configure named provider profiles and notes from a loopback-only browser dashboard.
@@ -22,13 +38,6 @@ CatalogFlow is developed in small, auditable vertical slices.
 - Render a human-readable preview and field-level diff before store writes.
 - Add idempotency keys and duplicate detection.
 - Add a WooCommerce fake server for end-to-end draft tests.
-
-## 0.4 — Hardened browser bridge
-
-- Replace legacy unauthenticated localhost helpers with per-session authentication.
-- Enforce exact origin allowlists, payload limits, rate limits, and single-task execution.
-- Permit image downloads only from configured public hosts and reject private networks.
-- Preserve the proven select-in-browser, review-in-terminal, press-Enter-to-process interaction.
 
 ## Later
 

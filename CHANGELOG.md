@@ -2,6 +2,17 @@
 
 All notable changes are documented here.
 
+## 0.4.0 — 2026-09-11
+
+- Added `catalogflow collect`, an authenticated loopback receiver that freezes a unique local queue
+  when the operator presses Enter.
+- Added a narrowly matched Alibaba Tampermonkey selector that sends only the chosen detail URL and
+  page title and keeps the one-time token in memory rather than extension storage.
+- Enforced exact source/origin/URL rules, a 16 KiB body limit, 30-request-per-minute rate limit,
+  100-item queue cap, duplicate idempotency, forbidden credential headers, and redacted server logs.
+- Kept collection separate from provider normalization: v0.4.0 does not scrape missing facts or
+  pretend a selected URL is already a complete listing input.
+
 ## 0.3.0 — 2026-09-11
 
 - Added a loopback-only visual connection center with channel names, user labels, notes, dynamic

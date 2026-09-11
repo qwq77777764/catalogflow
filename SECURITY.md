@@ -21,8 +21,8 @@ security review and explicit documentation.
 
 ## Local bridge invariant
 
-Any future localhost browser bridge must use a random per-session token, an exact origin
-allowlist, request-size limits, rate limiting, and SSRF protection. It must not return
+The localhost browser bridge and any future extensions must use a random per-session token, an exact
+origin allowlist, request-size limits, rate limiting, and SSRF protection. It must not return
 tracebacks or local paths to callers.
 
 ## Provider and SSH invariant

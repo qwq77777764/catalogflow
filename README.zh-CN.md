@@ -8,7 +8,7 @@ Claude Code，生成可审核的原创 WooCommerce 商品草稿。**
 [Agent 工作流](docs/agent-workflow.md) · [浏览器到 CMD 队列](docs/browser-queue-workflow.md)
 
 这个项目来自一套真实使用过的半自动流程：在已经登录的供应商网页挑选商品，点击
-“丢入本地队列”，链接、标题和可见图片进入同一台电脑上的队列；回到 CMD 按 Enter，
+“丢入本地队列”，商品链接和页面标题进入同一台电脑上的队列；回到 CMD 按 Enter，
 本地 Codex 或 Claude Code 根据已核实事实和图片重写 listing；人工检查后，最多只创建
 隐藏草稿。
 
@@ -101,8 +101,9 @@ python -m catalogflow examples/synthetic_product.json --source cj --generator cl
 
 ## 第三步：准备商品 JSON
 
-输入必须来自你自己拥有、已获授权、手工导出、登录页面合法采集或官方 API 获得的资料。
-商品 JSON 不能包含 Cookie、API Key、账号密码或客户信息。
+输入必须来自你自己拥有或获授权的结构化资料、明确导出文件或本人获准使用的官方 API。
+浏览器选品器只排队商品标识/URL，不会凭空补齐商品事实。商品 JSON 不能包含 Cookie、
+API Key、账号密码或客户信息。
 
 ```json
 {
@@ -146,10 +147,24 @@ python -m catalogflow product.json --source alibaba-manual --generator claude
                        校验 → 预览 → 隐藏草稿
 ```
 
-但旧版油猴脚本和 Python 控制器混有网站 DOM 细节、视觉点击、生产配置和商店写入，不能
-直接原样公开。安全版的交互、边界和重建计划见
-[docs/browser-queue-workflow.md](docs/browser-queue-workflow.md)。公开接收器完成前，下载者
-应先使用规范化 JSON，不能复制私人旧脚本。
+安全重写版的 Alibaba 油猴选品按钮和本机认证接收器已经随 CatalogFlow 提供：
+
+```powershell
+python -m catalogflow collect
+```
+
+命令会显示本机油猴脚本安装地址、一次性会话令牌和队列文件位置。安装脚本后，在
+Alibaba 商品详情页点击 **Add to CatalogFlow**，输入终端显示的接收器地址和令牌；令牌只
+保留在当前页面油猴脚本的内存闭包中，不写入扩展存储。选完后回到终端按 Enter 冻结队列。
+
+第一版采集器刻意只发送 `source`、商品详情 URL 和页面标题，不发送整页 HTML、Cookie、
+图片、价格、变体或登录信息。冻结的选品队列还不是完整商品 JSON；下一步官方供应商
+adapter 会凭用户自己的 API 授权，根据所选 URL/商品 ID 获取结构化资料。在 adapter 完成前，
+listing 生成仍使用规范化 JSON。
+
+旧版私人油猴脚本和 Python 控制器没有复制进仓库，因为它们混有脆弱 DOM 选择器、视觉
+点击、生产配置和商店写入。新版协议见
+[docs/browser-queue-workflow.md](docs/browser-queue-workflow.md)。
 
 ## CJ、Alibaba/1688 与 WooCommerce API
 

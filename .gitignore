@@ -19,6 +19,8 @@ build/
 *.log
 *.bak*
 queue_items.jsonl
+queues/
+profiles.json
 *_urls.txt
 *_registry.json
 codex_listing_out/
@@ -30,4 +32,3 @@ api_test_*/
 quality_preview/
 private/
 output/
-

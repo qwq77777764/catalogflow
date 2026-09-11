@@ -7,6 +7,7 @@ import json
 import os
 import sys
 
+from .collector import run_collector
 from .configuration import ProfileRepository, SystemKeyringStore, environment_for_profile
 from .dashboard import run_dashboard
 from .doctor import print_doctor_report
@@ -24,7 +25,10 @@ from .providers import JsonFileSource
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Create a safe local catalog preview",
-        epilog="Run 'catalogflow configure' to open the local visual connection center.",
+        epilog=(
+            "Use 'catalogflow configure' for connection profiles or "
+            "'catalogflow collect' for browser selections."
+        ),
     )
     parser.add_argument("product_json", nargs="?", help="Authorized normalized product JSON")
     parser.add_argument(
@@ -79,6 +83,20 @@ def build_configure_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def build_collect_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="catalogflow collect",
+        description="Collect explicit supplier product selections on this computer",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8766,
+        help="Loopback port used by the browser userscript (default: 8766)",
+    )
+    return parser
+
+
 def _load_profile(reference: str, expected_provider: str) -> None:
     repository = ProfileRepository()
     profile = repository.find(reference)
@@ -101,6 +119,10 @@ def main(argv: list[str] | None = None) -> int:
     if arguments and arguments[0] == "configure":
         args = build_configure_parser().parse_args(arguments[1:])
         run_dashboard(port=args.port, open_browser=not args.no_browser)
+        return 0
+    if arguments and arguments[0] == "collect":
+        args = build_collect_parser().parse_args(arguments[1:])
+        run_collector(port=args.port)
         return 0
     parser = build_parser()
     args = parser.parse_args(arguments)
