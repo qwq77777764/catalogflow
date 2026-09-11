@@ -19,6 +19,7 @@ from .generators import (
 )
 from .models import ImportMode, ImportRequest
 from .pipeline import import_products
+from .pricing_settings import PricingSettingsRepository
 from .providers import CjApiError, CjApiSource, JsonFileSource
 
 
@@ -160,7 +161,11 @@ def main(argv: list[str] | None = None) -> int:
         "claude": ClaudeCliListingGenerator,
         "deterministic": DeterministicListingGenerator,
     }
-    generator = generators[args.generator]()
+    try:
+        pricing_policy = PricingSettingsRepository().load()
+    except (RuntimeError, ValueError) as exc:
+        raise SystemExit(f"Saved pricing settings are invalid: {exc}") from None
+    generator = generators[args.generator](policy=pricing_policy)
     if args.supplier_profile:
         _load_profile(args.supplier_profile, "cj")
         try:

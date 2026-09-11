@@ -60,6 +60,24 @@ plaintext secret file. If no supported credential backend is available, saving s
 For isolated tests, `CATALOGFLOW_CONFIG_DIR` may point metadata to another directory. It does not
 change where the operating system stores secrets.
 
+## Visual pricing panel
+
+The dashboard's pricing panel is local-only and does not send costs to Codex, Claude, a supplier,
+or a store. Select one of two deterministic plans and enter an example cost to see a live
+breakdown before saving:
+
+- **Margin plan (default):** product cost + inbound shipping + last-mile shipping + optional
+  per-unit tax/duty estimate, then payment/return/operating reserves and target margin. Minimum
+  price and the existing `.95` ending remain enforced.
+- **Cost-multiplier plan:** product cost multiplied by the chosen value (default `3x`, allowed
+  range `1x`–`100x`), then adds inbound shipping, last-mile shipping, optional tax/duty estimate,
+  and the fixed payment fee once. Shipping and tax are not multiplied.
+
+The selected settings are validated and atomically saved as non-secret `pricing.json` next to the
+profile metadata. API keys, tokens, cookies, and SSH material are never written there. Tax/duty
+values are operator estimates only; CatalogFlow does not determine a customs rate or provide tax
+advice. If the file is absent, the runtime uses the legacy margin defaults.
+
 ## Current provider status
 
 | Provider | Dashboard profile | Runtime connector |

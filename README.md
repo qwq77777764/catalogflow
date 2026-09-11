@@ -88,6 +88,24 @@ API credentials. They must not enumerate a site, bypass login, CAPTCHA, access c
 limits. When official API access is unavailable, the safe fallback is operator-supplied structured
 data—not silent scraping.
 
+## Choose a pricing plan visually
+
+The same local dashboard also contains a pricing panel. It shows the cost inputs and a live,
+auditable result before anything is written to a store. Two deterministic plans are available:
+
+- **Margin plan (default):** adds product cost, per-unit shipping, optional user-estimated taxes or
+  duties, payment fees, return reserve, operating reserve, target margin, minimum price, and a
+  minimum product-cost multiple. It preserves the original `.95` price ending.
+- **Cost-multiplier plan:** starts with `product cost × multiplier` (default `3×`, editable from
+  `1×` to `100×`), then adds shipping, optional estimated taxes or duties, and the fixed payment
+  fee once. Shipping and taxes are not silently multiplied. It also uses the `.95` ending.
+
+Enter the multiplier and the example cost in the panel to compare the plans in real time, then
+save the selected defaults locally. The settings contain no secrets and are stored as
+`pricing.json` beside the local profile metadata. Taxes and duties are operator estimates only;
+CatalogFlow does not query customs, provide tax advice, or infer a tax rate. A missing settings
+file keeps the legacy margin defaults, so existing previews remain compatible.
+
 ## Connect Codex or Claude Code without an API key
 
 Choose **one** provider. You do not need both.

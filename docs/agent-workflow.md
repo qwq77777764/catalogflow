@@ -70,6 +70,12 @@ Reject or rewrite:
 
 The model never receives costs and never calculates a final price. CatalogFlow applies its reviewed
 local pricing policy after AI output. Contributors must keep pricing code deterministic and tested.
+The local dashboard exposes two reviewed plans: a margin plan (the default) and a cost-multiplier
+plan (default `3x`, operator-editable). Both accept per-unit inbound shipping and an optional
+operator-entered tax/duty estimate; shipping and tax are added once and are never silently
+multiplied. The resulting breakdown is shown before saving, and the selected non-secret settings
+are persisted locally in `pricing.json`. A missing file preserves the legacy margin defaults.
+Tax and duty inputs are estimates only, not customs or tax advice.
 
 ### 7. Validate and isolate failures
 

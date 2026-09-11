@@ -4,6 +4,9 @@ All notable changes are documented here.
 
 ## Unreleased
 
+- Added a loopback-only visual pricing panel with a default margin plan, editable cost-multiplier
+  plan, live breakdown, optional operator tax/duty estimate, and atomic non-secret `pricing.json`
+  settings.
 - Added a preview CJ official API source adapter for one explicit CJ product URL or PID.
 - Added in-memory CJ token exchange, fixed-host/no-redirect network enforcement, bounded JSON,
   redacted provider errors, product-ID matching, and synthetic contract tests.

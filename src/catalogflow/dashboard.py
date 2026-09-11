@@ -19,6 +19,8 @@ from .configuration import (
     SystemKeyringStore,
     public_profile,
 )
+from .pricing import PricingPolicy
+from .pricing_settings import PricingSettingsRepository
 
 MAX_REQUEST_BYTES = 64 * 1024
 
@@ -29,10 +31,14 @@ class DashboardApplication:
         repository: ProfileRepository,
         secret_store: SecretStore,
         token: str,
+        pricing_repository: PricingSettingsRepository | None = None,
     ) -> None:
         self.repository = repository
         self.secret_store = secret_store
         self.token = token
+        self.pricing_repository = pricing_repository or PricingSettingsRepository(
+            repository.directory
+        )
         self.origin = ""
 
     def state(self) -> dict[str, object]:
@@ -43,7 +49,11 @@ class DashboardApplication:
         profiles = [
             public_profile(profile, self.secret_store) for profile in self.repository.list()
         ]
-        return {"providers": providers, "profiles": profiles}
+        return {
+            "providers": providers,
+            "profiles": profiles,
+            "pricing": self.pricing_repository.load().to_dict(),
+        }
 
     def save_profile(self, payload: dict[str, object]) -> dict[str, object]:
         values = payload.get("values", {})
@@ -62,6 +72,37 @@ class DashboardApplication:
             secret_store=self.secret_store,
         )
         return public_profile(profile, self.secret_store)
+
+    def save_pricing(self, payload: dict[str, object]) -> dict[str, object]:
+        policy = PricingPolicy.from_dict(payload)
+        self.pricing_repository.save(policy)
+        return policy.to_dict()
+
+    def preview_pricing(self, payload: dict[str, object]) -> dict[str, object]:
+        expected = {"settings", "costs"}
+        unknown = set(payload) - expected
+        missing = expected - set(payload)
+        if unknown:
+            raise ValueError(f"Unknown pricing preview fields: {', '.join(sorted(unknown))}")
+        if missing:
+            raise ValueError(f"Missing pricing preview fields: {', '.join(sorted(missing))}")
+        settings = payload["settings"]
+        costs = payload["costs"]
+        if not isinstance(settings, dict) or not isinstance(costs, dict):
+            raise ValueError("Pricing preview settings and costs must be JSON objects")
+        expected_costs = {"product_cost", "inbound_shipping", "last_mile"}
+        unknown_costs = set(costs) - expected_costs
+        missing_costs = expected_costs - set(costs)
+        if unknown_costs:
+            raise ValueError(f"Unknown preview costs: {', '.join(sorted(unknown_costs))}")
+        if missing_costs:
+            raise ValueError(f"Missing preview costs: {', '.join(sorted(missing_costs))}")
+        policy = PricingPolicy.from_dict(settings)
+        return policy.breakdown(
+            costs["product_cost"],
+            costs["inbound_shipping"],
+            costs["last_mile"],
+        ).to_dict()
 
 
 class DashboardServer(ThreadingHTTPServer):
@@ -91,6 +132,12 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
                     {"error": "The operating-system credential store is unavailable."},
                 )
                 return
+            except ValueError:
+                self._send_json(
+                    HTTPStatus.SERVICE_UNAVAILABLE,
+                    {"error": "Saved pricing settings are invalid; edit pricing.json locally."},
+                )
+                return
             self._send_json(HTTPStatus.OK, state)
             return
         self._send_json(HTTPStatus.NOT_FOUND, {"error": "not_found"})
@@ -113,6 +160,28 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
                 )
                 return
             self._send_json(HTTPStatus.OK, {"profile": profile})
+            return
+        if parsed.path == "/api/pricing":
+            try:
+                pricing = self.server.application.save_pricing(self._read_json())
+            except ValueError as exc:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+                return
+            except RuntimeError:
+                self._send_json(
+                    HTTPStatus.SERVICE_UNAVAILABLE,
+                    {"error": "Pricing settings could not be saved."},
+                )
+                return
+            self._send_json(HTTPStatus.OK, {"pricing": pricing})
+            return
+        if parsed.path == "/api/pricing/preview":
+            try:
+                breakdown = self.server.application.preview_pricing(self._read_json())
+            except ValueError as exc:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+                return
+            self._send_json(HTTPStatus.OK, {"breakdown": breakdown})
             return
         if parsed.path == "/api/shutdown":
             self._send_json(HTTPStatus.OK, {"ok": True})
@@ -213,6 +282,7 @@ def run_dashboard(
     open_browser: bool = True,
     repository: ProfileRepository | None = None,
     secret_store: SecretStore | None = None,
+    pricing_repository: PricingSettingsRepository | None = None,
 ) -> None:
     """Run until Ctrl+C or the dashboard stop button is used."""
 
@@ -222,6 +292,7 @@ def run_dashboard(
         repository or ProfileRepository(),
         secret_store or SystemKeyringStore(),
         secrets.token_urlsafe(32),
+        pricing_repository,
     )
     server = DashboardServer(("127.0.0.1", port), application)
     actual_port = int(server.server_address[1])
