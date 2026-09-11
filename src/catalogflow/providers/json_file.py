@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from ..models import Product, Variant
+from ..models import Product, ShippingQuote, Variant
 
 
 class JsonFileSource:
@@ -21,6 +21,7 @@ class JsonFileSource:
                 sku=str(row["sku"]),
                 cost=float(row["cost"]),
                 attributes={str(k): str(v) for k, v in row.get("attributes", {}).items()},
+                shipping_quote=_shipping_quote(row.get("shipping_quote")),
             )
             for row in payload["variants"]
         )
@@ -34,3 +35,15 @@ class JsonFileSource:
             facts={str(k): str(v) for k, v in payload.get("facts", {}).items()},
         )
 
+
+def _shipping_quote(value: object) -> ShippingQuote | None:
+    if not isinstance(value, dict):
+        return None
+    return ShippingQuote(
+        origin_country=str(value["origin_country"]),
+        destination_country=str(value["destination_country"]),
+        quantity=int(value["quantity"]),
+        method=str(value["method"]),
+        total_cost_usd=float(value["total_cost_usd"]),
+        estimated_days=str(value.get("estimated_days", "")),
+    )

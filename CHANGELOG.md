@@ -9,6 +9,12 @@ All notable changes are documented here.
   redacted provider errors, product-ID matching, and synthetic contract tests.
 - Added `--supplier-profile` so the adapter loads the operator's own CJ API key from the operating-
   system keyring without sending credentials to a local AI process.
+- Added fail-closed per-variant quotes through CJ's official `logistic/freightCalculate` endpoint,
+  configurable origin/destination/ZIP/quantity/route settings, and shipping-aware local pricing.
+- Added normalized shipping details to local previews while keeping supplier variant IDs and raw
+  freight responses inside the adapter boundary.
+- Required complete CJ freight quotes at both validation and pricing boundaries; unknown provider
+  error codes are no longer echoed into preview files.
 
 ## 0.4.0 — 2026-09-11
 

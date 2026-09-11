@@ -100,7 +100,7 @@ call `codex exec` itself.
 
 ```powershell
 python -m catalogflow --doctor
-python -m catalogflow examples/synthetic_product.json --source cj --generator codex
+python -m catalogflow examples/synthetic_product.json --source alibaba-manual --generator codex
 ```
 
 ### Option B — Claude Code CLI
@@ -112,7 +112,7 @@ schema-validated print mode and disables shell, edit, write, and web tools.
 
 ```powershell
 python -m catalogflow --doctor
-python -m catalogflow examples/synthetic_product.json --source cj --generator claude
+python -m catalogflow examples/synthetic_product.json --source alibaba-manual --generator claude
 ```
 
 `--doctor` only runs `--version`; it makes no model request. If a command is installed outside
@@ -146,12 +146,13 @@ does not manufacture missing product facts. Never put cookies or credentials in 
 Run a local preview:
 
 ```powershell
-python -m catalogflow product.json --source cj --generator codex
-# or
 python -m catalogflow product.json --source alibaba-manual --generator claude
 ```
 
 The result is written to `output/preview.json`, which is ignored by Git.
+Normalized JSON labeled `--source cj` must include a complete provider-neutral `shipping_quote`
+for every variant; missing CJ freight is rejected rather than priced as zero. Prefer the official
+CJ profile flow below when starting from a CJ URL or PID.
 
 ### Preview one CJ product through your own API access
 
@@ -163,10 +164,14 @@ python -m catalogflow "CJ_PRODUCT_URL_OR_PID" --source cj `
   --supplier-profile "My CJ" --generator codex
 ```
 
-The preview adapter exchanges the API key for an access token in memory and calls CJ's official
-single-product detail endpoint. It does not list or crawl the catalog, persist access tokens, log
-raw provider responses, or send CJ credentials to Codex/Claude. Authentication, quota, malformed
-data, and mismatched-product failures stop explicitly. See [docs/cj-adapter.md](docs/cj-adapter.md).
+The preview adapter exchanges the API key for an access token in memory, calls CJ's official
+single-product detail endpoint, and requests an official freight quote for each variant. The
+profile defaults to `CN` → `US`, quantity `1`; destination ZIP and an exact preferred logistics
+name are optional. Without a preferred name, the lowest valid returned route is recorded in the
+local preview. It does not list or crawl the catalog, persist access tokens, log raw provider
+responses, or send CJ credentials, costs, or freight to Codex/Claude. Authentication, quota,
+missing-route, malformed-data, and mismatched-product failures stop explicitly. See
+[docs/cj-adapter.md](docs/cj-adapter.md).
 
 ## The CJ/Alibaba browser-to-CMD workflow
 
@@ -226,7 +231,7 @@ Set the three `WOOCOMMERCE_*` variables shown in `.env.example` in your local en
 review the preview, and then explicitly acknowledge the write:
 
 ```powershell
-python -m catalogflow product.json --source cj --generator codex --draft --yes
+python -m catalogflow product.json --source alibaba-manual --generator codex --draft --yes
 ```
 
 This interface cannot publish publicly. Public publication remains a separate manual action in

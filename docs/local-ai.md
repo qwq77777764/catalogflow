@@ -32,7 +32,7 @@ On macOS or Linux, activate the environment with `source .venv/bin/activate`.
 
 ```powershell
 python -m catalogflow --doctor
-python -m catalogflow examples/synthetic_product.json --source cj --generator codex
+python -m catalogflow examples/synthetic_product.json --source alibaba-manual --generator codex
 ```
 
 CatalogFlow invokes `codex exec` in read-only, ephemeral mode, requires JSON matching its schema,
@@ -57,7 +57,7 @@ Omitting it lets the installed CLI use its configured default.
 
 ```powershell
 python -m catalogflow --doctor
-python -m catalogflow examples/synthetic_product.json --source cj --generator claude
+python -m catalogflow examples/synthetic_product.json --source alibaba-manual --generator claude
 ```
 
 CatalogFlow calls Claude in non-interactive print mode with a JSON Schema. Session persistence and

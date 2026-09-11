@@ -10,7 +10,7 @@ from pathlib import Path
 
 from ..media import materialize_authorized_images
 from ..models import Listing, Product
-from ..pricing import PricingPolicy
+from ..pricing import PricingPolicy, shipping_cost_for_pricing
 from .common import build_listing_prompt, find_cli, safe_cli_environment
 
 
@@ -73,13 +73,25 @@ class CodexCliListingGenerator:
                 raise RuntimeError("Codex CLI did not create structured output")
             data = json.loads(output.read_text(encoding="utf-8"))
 
-        prices = {variant.sku: self.policy.price(variant.cost) for variant in product.variants}
+        prices = {
+            variant.sku: self.policy.price(
+                variant.cost,
+                last_mile=shipping_cost_for_pricing(product, variant),
+            )
+            for variant in product.variants
+        }
+        shipping_quotes = {
+            variant.sku: variant.shipping_quote
+            for variant in product.variants
+            if variant.shipping_quote is not None
+        }
         return Listing(
             title=str(data["title"]),
             description_html=str(data["description_html"]),
             category=str(data["category"]),
             tags=tuple(str(tag) for tag in data["tags"]),
             prices=prices,
+            shipping_quotes=shipping_quotes,
         )
 
     @staticmethod

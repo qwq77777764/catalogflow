@@ -69,7 +69,7 @@ change where the operating system stores secrets.
 | Shopify Admin API | Available to reserve settings | Planned GraphQL adapter |
 | Codex CLI | Available | Available; reuses the CLI login |
 | Claude Code CLI | Available | Available; reuses the CLI login |
-| CJdropshipping API | Available | Preview; one explicit product URL/PID |
+| CJdropshipping API | Available | Preview; one product URL/PID plus per-variant freight |
 | Alibaba/1688 Open Platform | Available to reserve credentials | Planned |
 | Zendrop API | Available to reserve credentials | Planned |
 
@@ -123,9 +123,9 @@ Marking a Codex, Claude, or WooCommerce profile as default lets the matching com
 automatically. A specific profile can also be selected by its unique label or ID:
 
 ```powershell
-python -m catalogflow product.json --source cj --generator codex --ai-profile "My Codex"
+python -m catalogflow product.json --source alibaba-manual --generator codex --ai-profile "My Codex"
 
-python -m catalogflow product.json --source cj --generator codex --draft --yes --store-profile "US WooCommerce"
+python -m catalogflow product.json --source alibaba-manual --generator codex --draft --yes --store-profile "US WooCommerce"
 
 python -m catalogflow "CJ_PRODUCT_URL_OR_PID" --source cj --supplier-profile "My CJ" --generator codex
 ```

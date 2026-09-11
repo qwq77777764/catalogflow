@@ -115,7 +115,9 @@ PROVIDERS: dict[str, dict[str, object]] = {
     "cj": {
         "name": "CJdropshipping API",
         "category": "source",
-        "description": "Preview adapter for one explicitly selected CJ product.",
+        "description": (
+            "Preview one selected CJ product with per-variant official freight quotes."
+        ),
         "availability": "preview",
         "fields": [
             {
@@ -125,7 +127,47 @@ PROVIDERS: dict[str, dict[str, object]] = {
                 "secret": True,
                 "environment": "CJ_API_KEY",
                 "placeholder": "Paste your own approved key",
-            }
+            },
+            {
+                "name": "origin_country_code",
+                "label": "Shipping origin country code",
+                "type": "text",
+                "secret": False,
+                "environment": "CJ_ORIGIN_COUNTRY_CODE",
+                "placeholder": "CN (default)",
+            },
+            {
+                "name": "target_country_code",
+                "label": "Destination country code",
+                "type": "text",
+                "secret": False,
+                "environment": "CJ_TARGET_COUNTRY_CODE",
+                "placeholder": "US (default)",
+            },
+            {
+                "name": "target_zip",
+                "label": "Destination ZIP / postal code (optional)",
+                "type": "text",
+                "secret": False,
+                "environment": "CJ_TARGET_ZIP",
+                "placeholder": "Example: 10001",
+            },
+            {
+                "name": "logistics",
+                "label": "Preferred logistics exact name (optional)",
+                "type": "text",
+                "secret": False,
+                "environment": "CJ_LOGISTICS",
+                "placeholder": "Example: CJPacket Ordinary",
+            },
+            {
+                "name": "freight_quantity",
+                "label": "Freight quote quantity",
+                "type": "text",
+                "secret": False,
+                "environment": "CJ_FREIGHT_QUANTITY",
+                "placeholder": "1 (default)",
+            },
         ],
     },
     "alibaba": {

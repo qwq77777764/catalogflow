@@ -81,7 +81,7 @@ CatalogFlow 采用“官方 API 优先”，不是批量爬虫。网页按钮只
 
 ```powershell
 python -m catalogflow --doctor
-python -m catalogflow examples/synthetic_product.json --source cj --generator codex
+python -m catalogflow examples/synthetic_product.json --source alibaba-manual --generator codex
 ```
 
 ### 使用 Claude Code CLI
@@ -92,7 +92,7 @@ python -m catalogflow examples/synthetic_product.json --source cj --generator co
 
 ```powershell
 python -m catalogflow --doctor
-python -m catalogflow examples/synthetic_product.json --source cj --generator claude
+python -m catalogflow examples/synthetic_product.json --source alibaba-manual --generator claude
 ```
 
 `--doctor` 只执行版本检查，不会发起 AI 请求。如果 CLI 不在 PATH，可把完整可执行文件
@@ -125,10 +125,12 @@ API Key、账号密码或客户信息。
 生成本地预览：
 
 ```powershell
-python -m catalogflow product.json --source cj --generator codex
-# 或
 python -m catalogflow product.json --source alibaba-manual --generator claude
 ```
+
+如果规范化 JSON 标记为 `--source cj`，则每个变体都必须包含完整、供应商无关的
+`shipping_quote`；缺少 CJ 运费时会直接拒绝，不会按 `$0` 运费定价。若输入是 CJ 链接或
+PID，优先使用下方的官方 CJ 档案流程。
 
 ### 用你自己的 CJ API 预览一个商品
 
@@ -140,10 +142,12 @@ python -m catalogflow "CJ商品链接或PID" --source cj `
   --supplier-profile "我的 CJ" --generator codex
 ```
 
-预览版 adapter 只在内存中用 API Key 换取 Access Token，并调用 CJ 官方单商品详情接口。
-它不会遍历商品目录、持久化 Access Token、记录原始响应，也不会把 CJ 凭据发送给
-Codex/Claude。授权失败、配额不足、数据异常或返回了不同商品时都会明确停止。详见
-[docs/cj-adapter.md](docs/cj-adapter.md)。
+预览版 adapter 只在内存中用 API Key 换取 Access Token，调用 CJ 官方单商品详情接口，
+并为每个变体调用官方运费试算。档案默认按 `CN` → `US`、数量 `1` 报价，可选填目的地
+邮编和精确物流名称；没有指定线路时，会把接口返回的最低有效线路记录进本地预览。
+它不会遍历商品目录、持久化 Access Token、记录原始响应，也不会把 CJ 凭据、成本或
+运费发送给 Codex/Claude。授权失败、配额不足、无可用线路、数据异常或返回了不同商品
+时都会明确停止。详见 [docs/cj-adapter.md](docs/cj-adapter.md)。
 
 ## 你记得的“登录 CJ → 点按钮 → CMD 回车”流程
 

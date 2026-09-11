@@ -8,7 +8,7 @@ from catalogflow.models import Product, Variant
 
 def product() -> Product:
     return Product(
-        "cj",
+        "alibaba-manual",
         "private-source-id",
         "Minimal Clock",
         "USD",
@@ -86,7 +86,7 @@ def test_claude_generator_exposes_only_read_for_images(monkeypatch) -> None:
         )
 
     with_image = Product(
-        "cj",
+        "alibaba-manual",
         "private-source-id",
         "Minimal Clock",
         "USD",

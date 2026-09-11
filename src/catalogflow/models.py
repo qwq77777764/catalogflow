@@ -15,10 +15,25 @@ class ImportMode(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class ShippingQuote:
+    origin_country: str
+    destination_country: str
+    quantity: int
+    method: str
+    total_cost_usd: float
+    estimated_days: str = ""
+
+    @property
+    def unit_cost_usd(self) -> float:
+        return self.total_cost_usd / self.quantity
+
+
+@dataclass(frozen=True, slots=True)
 class Variant:
     sku: str
     cost: float
     attributes: dict[str, str] = field(default_factory=dict)
+    shipping_quote: ShippingQuote | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,6 +54,7 @@ class Listing:
     category: str
     tags: tuple[str, ...]
     prices: dict[str, float]
+    shipping_quotes: dict[str, ShippingQuote] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,4 +83,3 @@ class ImportReport:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
-

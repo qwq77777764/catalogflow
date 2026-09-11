@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from urllib.parse import urlparse
 
@@ -31,6 +32,23 @@ def validate_product(product: Product) -> tuple[str, ...]:
         errors.append("at least one variant is required")
     if any(variant.cost < 0 for variant in product.variants):
         errors.append("variant costs cannot be negative")
+    quotes = [variant.shipping_quote for variant in product.variants]
+    if product.source == "cj" and any(quote is None for quote in quotes):
+        errors.append("every CJ variant requires a shipping quote before pricing")
+    if product.source == "cj" and any(
+        quote is not None and quote.total_cost_usd == 0 for quote in quotes
+    ):
+        errors.append("every CJ variant requires a positive shipping cost before pricing")
+    if any(
+        quote is not None
+        and (
+            quote.quantity < 1
+            or not math.isfinite(quote.total_cost_usd)
+            or quote.total_cost_usd < 0
+        )
+        for quote in quotes
+    ):
+        errors.append("variant shipping quotes must have a positive quantity and finite cost")
     return tuple(errors)
 
 
@@ -52,4 +70,3 @@ def is_public_http_url(value: str) -> bool:
     parsed = urlparse(value)
     host = (parsed.hostname or "").lower()
     return parsed.scheme in {"http", "https"} and bool(host) and host not in _PRIVATE_HOSTS
-

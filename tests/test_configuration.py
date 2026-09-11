@@ -138,6 +138,34 @@ def test_blank_secret_keeps_existing_keyring_value(tmp_path) -> None:
     assert secrets.get(profile.id, "api_key") == "original-secret"
 
 
+def test_cj_profile_resolves_non_secret_freight_settings(tmp_path) -> None:
+    repository = ProfileRepository(tmp_path)
+    secrets = MemorySecretStore()
+    profile = repository.save(
+        provider="cj",
+        label="US CJ quotes",
+        notes="",
+        values={
+            "origin_country_code": "CN",
+            "target_country_code": "US",
+            "target_zip": "10001",
+            "logistics": "CJPacket Ordinary",
+            "freight_quantity": "1",
+        },
+        secrets={"api_key": "private-key"},
+        secret_store=secrets,
+    )
+
+    assert environment_for_profile(profile, secrets) == {
+        "CJ_API_KEY": "private-key",
+        "CJ_ORIGIN_COUNTRY_CODE": "CN",
+        "CJ_TARGET_COUNTRY_CODE": "US",
+        "CJ_TARGET_ZIP": "10001",
+        "CJ_LOGISTICS": "CJPacket Ordinary",
+        "CJ_FREIGHT_QUANTITY": "1",
+    }
+
+
 def test_secret_is_rolled_back_when_metadata_write_fails(tmp_path, monkeypatch) -> None:
     repository = ProfileRepository(tmp_path)
     secrets = MemorySecretStore()

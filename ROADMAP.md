@@ -14,15 +14,16 @@ CatalogFlow is developed in small, auditable vertical slices.
 
 - Exchange the operator's CJ API key for an in-memory access token and fetch one explicit PID.
 - Convert official CJ detail data into normalized facts, variants, USD costs, and images.
+- Quote official end-to-end freight per variant and include it in deterministic local pricing.
 - Cover the network boundary with an injectable transport and synthetic contract tests.
 - Stop explicitly on missing authorization, provider quota exhaustion, or incomplete required data;
   never fall back to scraping.
 
 ## Next
 
-- Validate the preview adapter against one operator-selected live CJ product.
 - Connect a narrowly scoped CJ browser selector or frozen queue to the same adapter.
-- Add shipping-cost calculation as a separate explicit API step.
+- Add variant-level inventory origin selection instead of the current explicit/default origin.
+- Add a review UI for comparing returned logistics routes before choosing one.
 
 ## Shipped in 0.3 — Local connection center
 

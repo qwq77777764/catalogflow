@@ -6,7 +6,7 @@ import html
 import re
 
 from ..models import Listing, Product
-from ..pricing import PricingPolicy
+from ..pricing import PricingPolicy, shipping_cost_for_pricing
 
 
 class DeterministicListingGenerator:
@@ -24,7 +24,18 @@ class DeterministicListingGenerator:
             "<p>A practical product draft generated from authorized source facts.</p>"
             f"<ul>{facts or '<li>Specifications are not provided.</li>'}</ul>"
         )
-        prices = {variant.sku: self.policy.price(variant.cost) for variant in product.variants}
+        prices = {
+            variant.sku: self.policy.price(
+                variant.cost,
+                last_mile=shipping_cost_for_pricing(product, variant),
+            )
+            for variant in product.variants
+        }
+        shipping_quotes = {
+            variant.sku: variant.shipping_quote
+            for variant in product.variants
+            if variant.shipping_quote is not None
+        }
         words = [word.lower() for word in re.findall(r"[A-Za-z0-9]+", title)]
         tags = tuple(dict.fromkeys(words))[:5]
         return Listing(
@@ -33,5 +44,5 @@ class DeterministicListingGenerator:
             category="Uncategorized",
             tags=tags,
             prices=prices,
+            shipping_quotes=shipping_quotes,
         )
-
