@@ -7,6 +7,7 @@ import json
 import secrets
 import threading
 import webbrowser
+from dataclasses import replace
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -19,7 +20,8 @@ from .configuration import (
     SystemKeyringStore,
     public_profile,
 )
-from .pricing import PricingPolicy
+from .exchange_rates import ExchangeRateService, ExchangeRatesUnavailable
+from .pricing import PricingPolicy, PricingScheme
 from .pricing_settings import PricingSettingsRepository
 
 MAX_REQUEST_BYTES = 64 * 1024
@@ -32,6 +34,7 @@ class DashboardApplication:
         secret_store: SecretStore,
         token: str,
         pricing_repository: PricingSettingsRepository | None = None,
+        exchange_rate_service: ExchangeRateService | None = None,
     ) -> None:
         self.repository = repository
         self.secret_store = secret_store
@@ -40,6 +43,7 @@ class DashboardApplication:
             repository.directory
         )
         self.origin = ""
+        self.exchange_rate_service = exchange_rate_service or ExchangeRateService()
 
     def state(self) -> dict[str, object]:
         providers = [
@@ -53,6 +57,7 @@ class DashboardApplication:
             "providers": providers,
             "profiles": profiles,
             "pricing": self.pricing_repository.load().to_dict(),
+            "pricing_defaults": PricingPolicy().to_dict(),
         }
 
     def save_profile(self, payload: dict[str, object]) -> dict[str, object]:
@@ -98,11 +103,29 @@ class DashboardApplication:
         if missing_costs:
             raise ValueError(f"Missing preview costs: {', '.join(sorted(missing_costs))}")
         policy = PricingPolicy.from_dict(settings)
-        return policy.breakdown(
+        breakdown = policy.breakdown(
             costs["product_cost"],
             costs["inbound_shipping"],
             costs["last_mile"],
         ).to_dict()
+        comparison = {}
+        for scheme in PricingScheme:
+            if scheme == policy.scheme:
+                comparison[scheme.value] = {"breakdown": breakdown}
+                continue
+            try:
+                compared = replace(policy, scheme=scheme).breakdown(
+                    costs["product_cost"],
+                    costs["inbound_shipping"],
+                    costs["last_mile"],
+                ).to_dict()
+            except ValueError:
+                comparison[scheme.value] = {
+                    "error": "This scheme is unavailable for the current settings and costs."
+                }
+            else:
+                comparison[scheme.value] = {"breakdown": compared}
+        return {"breakdown": breakdown, "comparison": comparison}
 
 
 class DashboardServer(ThreadingHTTPServer):
@@ -119,7 +142,25 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
         parsed = urlparse(self.path)
         if parsed.path in {"/", "/index.html"}:
-            self._serve_dashboard()
+            self._serve_asset("dashboard.html", "text/html; charset=utf-8")
+            return
+        if parsed.path == "/assets/dashboard-i18n.js":
+            self._serve_asset("dashboard-i18n.js", "text/javascript; charset=utf-8")
+            return
+        if parsed.path == "/assets/dashboard-fx.js":
+            self._serve_asset("dashboard-fx.js", "text/javascript; charset=utf-8")
+            return
+        if parsed.path == "/api/exchange-rates":
+            if not self._authorized():
+                return
+            try:
+                rates = self.server.application.exchange_rate_service.latest()
+            except ExchangeRatesUnavailable:
+                self._send_json(
+                    HTTPStatus.SERVICE_UNAVAILABLE, {"error": "exchange_rates_unavailable"}
+                )
+                return
+            self._send_json(HTTPStatus.OK, rates)
             return
         if parsed.path == "/api/state":
             if not self._authorized():
@@ -167,7 +208,7 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             except ValueError as exc:
                 self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
                 return
-            except RuntimeError:
+            except (OSError, RuntimeError):
                 self._send_json(
                     HTTPStatus.SERVICE_UNAVAILABLE,
                     {"error": "Pricing settings could not be saved."},
@@ -177,11 +218,11 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/pricing/preview":
             try:
-                breakdown = self.server.application.preview_pricing(self._read_json())
+                preview = self.server.application.preview_pricing(self._read_json())
             except ValueError as exc:
                 self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
                 return
-            self._send_json(HTTPStatus.OK, {"breakdown": breakdown})
+            self._send_json(HTTPStatus.OK, preview)
             return
         if parsed.path == "/api/shutdown":
             self._send_json(HTTPStatus.OK, {"ok": True})
@@ -213,11 +254,12 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             return
         self._send_json(HTTPStatus.OK, {"ok": True})
 
-    def _serve_dashboard(self) -> None:
-        path = Path(__file__).with_name("dashboard.html")
+    def _serve_asset(self, filename: str, content_type: str) -> None:
+        # Only fixed filenames from the routes above reach the filesystem.
+        path = Path(__file__).with_name(filename)
         data = path.read_bytes()
         self.send_response(HTTPStatus.OK)
-        self._security_headers("text/html; charset=utf-8")
+        self._security_headers(content_type)
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
@@ -256,8 +298,13 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self._security_headers("application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
+        try:
+            self.end_headers()
+            self.wfile.write(data)
+        except ConnectionError:
+            # Typing a new value cancels the previous preview in the browser.
+            # A departed caller is not a server error and needs no traceback.
+            return
 
     def _security_headers(self, content_type: str) -> None:
         self.send_header("Content-Type", content_type)
@@ -268,7 +315,7 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         self.send_header(
             "Content-Security-Policy",
             "default-src 'none'; connect-src 'self'; img-src 'self' data:; "
-            "style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; "
+            "style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'; base-uri 'none'; "
             "form-action 'none'; frame-ancestors 'none'",
         )
 

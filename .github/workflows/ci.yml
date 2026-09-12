@@ -18,3 +18,7 @@ jobs:
       - run: python -m pip install -e ".[dev]"
       - run: ruff check .
       - run: pytest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test tests/dashboard-*.test.cjs

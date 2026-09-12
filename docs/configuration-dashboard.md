@@ -27,6 +27,29 @@ python -m catalogflow configure --no-browser
 python -m catalogflow configure --port 8765
 ```
 
+For a fresh page load or reopening the panel, use the original session URL printed by the CLI while
+that server is running. A bare local address omits session authentication; restarting the command
+creates a new session URL.
+
+## Choose the interface language
+
+The visible toolbar provides **中文 (CN)** (`zh-CN`) and **English (US)** (`en-US`). On the first
+visit, the panel follows the browser language and falls back to English when neither language is
+preferred. Browser `localStorage` stores only the selected language code for that local address and
+port; a new random port does not share the saved preference.
+
+Switching updates labels, provider fields, formulas, validation messages, dynamic status messages,
+and USD/percentage display formats using dictionaries bundled with CatalogFlow. No AI call or
+external translation service is required. Language selection leaves core pricing in USD; the
+separate shipping converter below provides an optional currency comparison.
+
+Entered costs, rates, connection names, notes, drafts, and secret fields are preserved. User-written
+names and notes remain in their original language. Switching languages does not save pricing or
+change which settings apply to later CLI runs.
+
+Developers can run the bundled dashboard checks with `node --test tests/dashboard-*.test.cjs`
+(Node.js 22, no npm dependencies). CI runs them alongside the Python tests.
+
 ## What a connection profile contains
 
 Each profile has:
@@ -62,9 +85,11 @@ change where the operating system stores secrets.
 
 ## Visual pricing panel
 
-The dashboard's pricing panel is local-only and does not send costs to Codex, Claude, a supplier,
-or a store. Select one of two deterministic plans and enter an example cost to see a live
-breakdown before saving:
+The dashboard calculates prices locally and does not send costs to Codex, Claude, a supplier,
+a store, or the exchange-rate service. Enter example product cost and shipping once to compare
+both plans side by side.
+Selecting a plan determines which settings the CLI will use after saving; viewing the other plan
+does not change the selected plan.
 
 - **Margin plan (default):** product cost + inbound shipping + last-mile shipping + optional
   per-unit tax/duty estimate, then payment/return/operating reserves and target margin. Minimum
@@ -73,10 +98,117 @@ breakdown before saving:
   range `1x`–`100x`), then adds inbound shipping, last-mile shipping, optional tax/duty estimate,
   and the fixed payment fee once. Shipping and tax are not multiplied.
 
-The selected settings are validated and atomically saved as non-secret `pricing.json` next to the
-profile metadata. API keys, tokens, cookies, and SSH material are never written there. Tax/duty
-values are operator estimates only; CatalogFlow does not determine a customs rate or provide tax
-advice. If the file is absent, the runtime uses the legacy margin defaults.
+### Read the calculation
+
+All pricing inputs and results are **USD per unit**. A payment percentage, return reserve, and
+operating reserve each apply to the final selling price. The fixed payment fee assumes
+**one unit per order**; allocation across multiple items in an actual order is not implemented.
+Return and operating rates are
+budgeted deductions, not measured refund or expense data.
+
+Let `C` be product cost, `S` inbound plus last-mile shipping, `T` estimated tax/duty, `F` the fixed
+payment fee, and `r` the sum of payment, return, and operating rates. Let `m` be target margin.
+
+| Result | Calculation |
+| --- | --- |
+| Landed cost | `C + S + T` |
+| A: margin candidate | `(C + S + T + F) / (1 - r - m)` |
+| A: price before ending | Maximum of the margin candidate, `C × minimum_multiplier`, and minimum price |
+| B: multiplier candidate | `C × cost_multiplier + S + T + F` |
+| B: price before ending | Maximum of the multiplier candidate and minimum price |
+| Final selling price `P` | Round the price upward to the next price ending in `.95`; an existing `.95` stays unchanged |
+| Estimated unit profit | `P - (C + S + T) - F - P × r` |
+| Estimated margin | Estimated unit profit divided by `P` |
+| Theoretical break-even price | `(C + S + T + F) / (1 - r)`, before price floors or `.95` adjustment |
+
+The comparison explains whether the formula, minimum product-cost multiple, or minimum price
+sets the price before the `.95` adjustment. Plan B uses no minimum product-cost-multiple floor.
+The difference between that pre-ending price and the final price is shown separately.
+
+**Plan B does not automatically ensure the target margin.** Percentage fees and reserves do not
+set its price, but they are deducted when estimating its profit. A low multiplier can yield a
+loss even when the selling price exceeds product cost plus freight. The displayed profit is an
+estimate after the entered deductions, not accounting net profit; omitted expenses remain omitted.
+
+For CJ, the official quote covers its quoted route for each variant. Divide its total by the quoted
+quantity and enter that per-unit shipping amount **once**, for example under last-mile with inbound
+set to zero. Do not enter the same complete quote in both shipping fields. Subsequent CJ imports
+use each variant's actual normalized quote, not the panel's example freight.
+
+### Convert the last-mile shipping example
+
+The converter at the bottom of the sample-cost card uses the **Last-mile / end-to-end shipping
+(USD/unit)** field directly. Select CNY, EUR, GBP, JPY, CAD, AUD, HKD, SGD, CHF, NZD, or USD to see
+the original USD amount beside the converted amount. The displayed equation, **1 USD = X target
+currency**, makes the rate direction explicit; changing the shipping input updates the comparison.
+
+The default reference mode fetches daily rates through the local authenticated dashboard from
+[Frankfurter's v1 API](https://frankfurter.dev/v1/). The server requests the fixed endpoint
+`https://api.frankfurter.dev/v1/latest?base=USD` and caches the validated response in memory for
+one hour. It sends no cost, shipping amount, pricing setting, credential, or user-selected URL to
+the service. The reference date and source stay visible: these are daily working-day reference
+rates, not live bank execution quotes. Weekends and holidays may show the last available date.
+
+Choose manual mode to enter your own positive rate in the same **1 USD = X** direction. Manual
+values are retained when switching languages, and a late reference response cannot replace them.
+A failed reference lookup clears the reference conversion and offers retry or manual input;
+it does not silently present an old result as a fresh rate.
+
+Only the last-mile trial amount is converted. The converter does not change the USD input,
+product cost, inbound freight, either pricing formula, selling prices, or the store currency.
+The selected currency, rate, and converted result are not written to `pricing.json`; saving
+pricing does not turn this comparison into a currency setting for subsequent imports.
+
+### Worked example
+
+Consider a synthetic product costing **$8.50**, with **$4.71** shipping per unit and **$1.00**
+estimated tax/duty. Keep the other defaults: 3.5% payment fee, $0.40 fixed payment fee, 7% return
+reserve, 5% operating reserve, 45% target margin, $9.95 minimum price, a 2× minimum product-cost
+multiple for A, and a 3× product-cost multiple for B.
+
+| Per-unit result | A: margin | B: 3× product cost |
+| --- | ---: | ---: |
+| Landed cost | $14.21 | $14.21 |
+| Price before `.95` ending | $36.9873 | $31.61 |
+| `.95` adjustment | About $0.9627 | $0.34 |
+| Final price | **$37.95** | **$31.95** |
+| Payment percentage fee | About $1.33 | About $1.12 |
+| Fixed payment fee | $0.40 | $0.40 |
+| Return reserve | About $2.66 | About $2.24 |
+| Operating reserve | About $1.90 | About $1.60 |
+| Estimated profit | **$17.46** | **$12.39** |
+| Estimated margin | **46.0%** | **38.8%** |
+| Theoretical break-even price | About $17.29 | About $17.29 |
+
+Neither price floor changes this example. The upward `.95` adjustment puts A above its 45% target;
+B remains below that target. Displayed amounts are rounded, so adding the displayed deductions
+can differ by a cent from calculations using full precision. Changing the synthetic inputs changes
+both comparisons without importing a product or writing to a store.
+
+### Save, undo, and restore defaults
+
+Product cost and both shipping fields are trial inputs and are not saved. The chosen plan, rates,
+multipliers, price floor, fixed payment fee, and per-unit tax/duty estimate are saved settings.
+Undo discards pending edits and returns the form to its last saved settings; restoring defaults
+loads the original margin defaults into the form. Neither action writes the settings file. To make
+restored defaults or other changes apply to later CLI runs, click **Save**.
+
+An invalid trial input clears the old comparison instead of leaving a stale price on screen;
+otherwise-valid policy settings can still be saved without a valid trial cost. Invalid selected-plan
+settings block saving. If only the alternative plan is invalid, that card is unavailable while the
+selected plan remains usable. Rapid edits cancel older previews so late responses cannot overwrite
+the current result. Refreshing connection profiles preserves pending pricing edits, and a failed
+save leaves those edits available for retry.
+
+Saving validates the settings and atomically writes non-secret `pricing.json` next to the profile
+metadata. Only subsequent CLI runs load those saved settings; existing previews and store products
+are unchanged. API keys, tokens, cookies, and SSH material are never written there. If the settings
+file is absent, the runtime uses the legacy margin defaults. Invalid saved settings stop the CLI
+before listing generation rather than silently selecting another price.
+
+Tax/duty values are operator estimates only; CatalogFlow does not query customs, determine a tax
+rate, or provide tax advice. Both pricing formulas and the existing settings format remain
+compatible with earlier saved settings.
 
 ## Current provider status
 

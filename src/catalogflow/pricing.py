@@ -77,6 +77,14 @@ class PriceBreakdown:
     minimum_price: float
     raw_price: float
     final_price: float
+    payment_percentage_fee: float
+    return_reserve: float
+    operating_reserve: float
+    estimated_profit: float
+    estimated_margin: float
+    break_even_price: float
+    rounding_adjustment: float
+    price_driver: str
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -251,6 +259,25 @@ class PricingPolicy:
             raw_price = max(primary_candidate, self.minimum_price)
         if not math.isfinite(raw_price) or raw_price > MAX_MONEY * MAX_MULTIPLIER:
             raise ValueError("Calculated price is outside the supported finite range")
+        if raw_price == primary_candidate:
+            price_driver = "formula"
+        elif raw_price == minimum_multiplier_candidate:
+            price_driver = "minimum_multiplier"
+        else:
+            price_driver = "minimum_price"
+        final_price = _round_up_to_95(raw_price)
+        payment_percentage_fee = final_price * self.payment_fee_rate
+        return_reserve = final_price * self.return_rate
+        operating_reserve = final_price * self.operating_rate
+        estimated_profit = (
+            final_price
+            - landed_cost
+            - self.payment_fixed_fee
+            - payment_percentage_fee
+            - return_reserve
+            - operating_reserve
+        )
+        common_rates = self.payment_fee_rate + self.return_rate + self.operating_rate
         return PriceBreakdown(
             scheme=self.scheme.value,
             product_cost=checked["product_cost"],
@@ -267,5 +294,13 @@ class PricingPolicy:
             ),
             minimum_price=self.minimum_price,
             raw_price=round(raw_price, 6),
-            final_price=_round_up_to_95(raw_price),
+            final_price=final_price,
+            payment_percentage_fee=round(payment_percentage_fee, 6),
+            return_reserve=round(return_reserve, 6),
+            operating_reserve=round(operating_reserve, 6),
+            estimated_profit=round(estimated_profit, 6),
+            estimated_margin=round(estimated_profit / final_price, 6),
+            break_even_price=round((landed_cost + self.payment_fixed_fee) / (1 - common_rates), 6),
+            rounding_adjustment=round(final_price - raw_price, 6),
+            price_driver=price_driver,
         )

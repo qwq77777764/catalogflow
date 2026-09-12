@@ -15,6 +15,12 @@
       font:15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
     button, input, select, textarea { font:inherit; }
     .shell { max-width:1180px; margin:auto; padding:34px 22px 70px; }
+    .language-bar { position:sticky; top:0; z-index:10; display:flex; justify-content:flex-end;
+      align-items:center; gap:10px; padding:9px 0; margin-bottom:20px; background:rgba(243,246,244,.97); }
+    .language-bar label { margin:0; font-size:13px; }
+    .language-bar select { width:auto; max-width:65%; padding:8px 10px; background:#fff; }
+    .panel, .results-grid > *, .pricing-grid > * { min-width:0; }
+    .formula, .provider-note, .card, .warning { overflow-wrap:anywhere; }
     header { display:flex; justify-content:space-between; align-items:flex-start; gap:28px; margin-bottom:28px; }
     .eyebrow { color:var(--green); font-weight:800; letter-spacing:.12em; text-transform:uppercase;
       font-size:12px; }
@@ -33,6 +39,87 @@
     .flow-note { grid-column:1/-1; margin:2px 0 0; color:var(--muted); font-size:13px; }
     .grid { display:grid; grid-template-columns:minmax(0,1.04fr) minmax(340px,.96fr); gap:22px; }
     .pricing-panel { margin-top:22px; }
+    .section-nav { display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
+    .section-nav a { color:var(--green); background:#fff; border:1px solid #c6dbce;
+      padding:9px 15px; border-radius:999px; font-weight:750; text-decoration:none; }
+    #pricing-title, #connections { scroll-margin-top:80px; }
+    .pricing-panel .panel-head { align-items:flex-start; }
+    .pricing-state { flex-shrink:0; border-radius:999px; padding:6px 11px; font-size:13px;
+      background:var(--green2); color:var(--green); }
+    .pricing-state.dirty { background:var(--amber2); color:var(--amber); }
+    .pricing-lede { margin:8px 0 0; color:var(--muted); max-width:710px; }
+    .cost-sample { padding:18px; background:#f0f6f2; border:1px solid #d5e3da;
+      border-radius:16px; margin-bottom:20px; }
+    .cost-sample h3, .pricing-results h3 { margin:0 0 12px; font-size:17px; }
+    .cost-sample .field { margin-bottom:0; }
+    .cost-sample .hint { margin:12px 0 0; }
+    .fx-card { margin-top:18px; padding:18px; border:1px solid #c6dbce; border-radius:14px; background:#fff; }
+    .fx-card h4 { margin:0; font-size:17px; }
+    .fx-card .fx-intro { margin:4px 0 14px; }
+    .fx-controls { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .fx-controls .field { min-width:0; }
+    .fx-result-row { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1.3fr); align-items:center;
+      gap:12px; padding:16px; margin-top:14px; border-radius:12px; background:#eef6f1; }
+    .fx-result-row small { display:block; color:var(--muted); margin-bottom:4px; }
+    .fx-result-row output { display:block; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; font-weight:800; }
+    #fx-result { font-size:24px; color:var(--green); }
+    .fx-arrow { color:var(--green); font-size:23px; }
+    .fx-rate-line { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; margin-top:12px; }
+    #fx-equation { font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+    .fx-card .fx-footer { margin-top:12px; display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; }
+    .fx-footer a { color:var(--green); }
+    .fx-caution, #fx-error { color:var(--amber); }
+    #fx-result.fx-muted { color:var(--muted); }
+    @media (max-width:520px) { .fx-controls { grid-template-columns:1fr; }
+      .pricing-panel { padding:18px; } .cost-sample { padding:12px; }
+      #fx-result { font-size:clamp(17px,5vw,24px); }
+      .fx-result-row { grid-template-columns:minmax(0,1fr); gap:4px; }
+      .fx-arrow { line-height:1.2; transform:rotate(90deg); justify-self:start; }
+      .fx-card { padding:14px; } }
+    .comparison { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .plan-card { border:1px solid var(--line); border-radius:17px; padding:20px;
+      background:#fff; min-width:0; }
+    .plan-card.selected { border:2px solid var(--green); padding:19px; background:#f6fbf8; }
+    .plan-card h3 { margin:0; font-size:18px; }
+    .plan-card .plan-description { color:var(--muted); font-size:13px; min-height:40px; margin:6px 0 10px; }
+    .plan-price { font-size:36px; line-height:1.3; font-weight:850; letter-spacing:-.035em;
+      font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+    .plan-price small { font-size:13px; font-weight:500; color:var(--muted); letter-spacing:0; }
+    .plan-stats { display:flex; flex-wrap:wrap; gap:12px 25px; margin:12px 0; }
+    .plan-stats span { display:block; color:var(--muted); font-size:12px; }
+    .plan-stats output { font-size:18px; font-weight:800; font-variant-numeric:tabular-nums; }
+    .plan-note { min-height:42px; margin:10px 0; color:var(--muted); font-size:13px; }
+    .plan-note.caution { color:var(--amber); }
+    .plan-note.loss, .loss { color:var(--red); }
+    .plan-card button { width:100%; }
+    .pricing-error { margin:15px 0; padding:12px 14px; border:1px solid #e6b6b2;
+      background:#fff1ef; border-radius:12px; color:var(--red); }
+    [hidden] { display:none !important; }
+    input[aria-invalid="true"] { border-color:var(--red); background:#fff8f7; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    button:focus-visible, a:focus-visible, summary:focus-visible { outline:3px solid #6ca18a; outline-offset:3px; }
+    .pricing-settings { margin-top:22px; border:1px solid var(--line); border-radius:15px; padding:16px; }
+    .pricing-settings summary, .formula-details summary { cursor:pointer; font-weight:800; }
+    .pricing-settings[open] summary { margin-bottom:16px; }
+    .field-tag { color:var(--green); font-size:12px; font-weight:600; }
+    .pricing-results { margin-top:22px; }
+    .results-grid { display:grid; grid-template-columns:1.15fr 1fr; gap:22px; margin-top:16px; }
+    .cost-table { border-collapse:collapse; width:100%; font-variant-numeric:tabular-nums; }
+    .cost-table th, .cost-table td { padding:9px 4px; border-bottom:1px solid var(--line); text-align:left; }
+    .cost-table th { font-weight:550; }
+    .cost-table td { text-align:right; white-space:nowrap; font-weight:750; }
+    .cost-table .total { background:#eef6f1; }
+    .price-explanation { background:#f6f8f6; border-radius:14px; padding:16px; }
+    .price-explanation p { margin:0 0 10px; }
+    .price-explanation dl { display:grid; grid-template-columns:1fr auto; gap:8px 12px; margin:0; font-size:13px; }
+    .price-explanation dt { color:var(--muted); }
+    .price-explanation dd { margin:0; font-weight:750; }
+    .formula-details { margin-top:16px; }
+    .pricing-save { border-top:1px solid var(--line); margin-top:22px; padding-top:17px; }
+    .pricing-save .actions { flex-wrap:wrap; }
+    .pricing-save .primary { flex:initial; }
+    .pricing-footnote { margin:12px 0 0; font-size:13px; color:var(--muted); }
+    .pricing-results[aria-busy="true"] .comparison { opacity:.7; }
     .pricing-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
     .pricing-group { border:1px solid var(--line); border-radius:15px; padding:16px; background:#fbfcfb; }
     .pricing-group h3 { margin:0 0 13px; font-size:17px; }
@@ -41,12 +128,6 @@
       color:#28473b; font:13px/1.65 ui-monospace, SFMono-Regular, Consolas, monospace; white-space:pre-wrap; }
     .warning { padding:12px 14px; border-radius:12px; color:#744700; background:var(--amber2);
       border:1px solid #f0d79f; font-size:13px; }
-    .breakdown { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-top:14px; }
-    .metric { border:1px solid var(--line); border-radius:12px; padding:11px; background:#fff; }
-    .metric span { display:block; color:var(--muted); font-size:12px; }
-    .metric output { font-size:18px; font-weight:850; }
-    .metric.final { color:var(--green); background:var(--green2); border-color:#b9dfcc; }
-    .plan-hidden { display:none; }
     .panel { background:rgba(255,255,255,.94); border:1px solid rgba(212,222,217,.9);
       border-radius:22px; padding:24px; box-shadow:var(--shadow); backdrop-filter:blur(8px); }
     .panel-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:19px; }
@@ -97,12 +178,18 @@
       font-size:13px; }
     @media (max-width:820px) { header { flex-direction:column; } .grid { grid-template-columns:1fr; }
       .workflow { grid-template-columns:repeat(2,1fr); }
-      .pricing-grid, .breakdown { grid-template-columns:1fr; }
+      .pricing-grid { grid-template-columns:1fr; }
+      .comparison, .results-grid { grid-template-columns:1fr; }
+      .pricing-panel .panel-head { flex-direction:column; }
+      .pricing-save .actions button { width:100%; }
+      .price-explanation dl { grid-template-columns:minmax(0,1fr) auto; }
       .local { white-space:normal; } footer { flex-direction:column; } }
   </style>
 </head>
 <body>
   <div class="shell">
+    <div class="language-bar"><label for="ui-language">语言</label>
+      <select id="ui-language" aria-label="Language / 语言"><option value="zh-CN">中文 (CN)</option><option value="en-US">English (US)</option></select></div>
     <header>
       <div><div class="eyebrow">CatalogFlow · Local Connection Center</div>
         <h1>把渠道接好，<br>不用改一行代码。</h1>
@@ -118,10 +205,11 @@
       <div class="flow-step"><b>04 · REVIEW</b><span>审核后存草稿</span></div>
       <p class="flow-note">不是批量爬虫：不遍历站点、不绕过登录或限流。正式供应商适配器只使用操作者自行申请并获准使用的官方 API；本地 AI 需要已有登录与可用额度。</p>
     </div>
-    <main class="grid">
+    <nav class="section-nav" aria-label="面板导航"><a href="#connections">连接档案</a><a href="#pricing-title">定价工作台 ↓</a></nav>
+    <main class="grid" id="connections">
       <section class="panel">
         <div class="panel-head"><h2 id="form-title">新增连接</h2><div class="step">1</div></div>
-        <form id="profile-form" autocomplete="off">
+        <form id="profile-form" autocomplete="off" novalidate>
           <input id="profile-id" type="hidden">
           <div class="field"><label for="provider">渠道 / Provider</label><select id="provider"></select></div>
           <div id="provider-note" class="provider-note available"></div>
@@ -141,153 +229,448 @@
       </section>
     </main>
     <section class="panel pricing-panel" aria-labelledby="pricing-title">
-      <div class="panel-head"><div><h2 id="pricing-title">可视化定价方案</h2>
-        <div class="hint">定价完全由本机确定性公式计算；AI 看不到成本、运费或税费，也不能决定价格。</div></div><div class="step">3</div></div>
-      <form id="pricing-form">
-        <div class="pricing-grid">
-          <div class="pricing-group"><h3>方案与费用</h3>
-            <div class="field"><label for="pricing-scheme">定价方案</label><select id="pricing-scheme">
-              <option value="margin">方案 A · 完整利润率</option>
-              <option value="cost_multiplier">方案 B · 商品成本倍数</option>
-            </select></div>
-            <div class="field"><label for="payment-fee-rate">支付费率（%）</label><input id="payment-fee-rate" type="number" min="0" max="95" step="0.01" required></div>
-            <div class="field"><label for="payment-fixed-fee">每单固定支付费（USD）</label><input id="payment-fixed-fee" type="number" min="0" max="10000" step="0.01" required></div>
-            <div class="field"><label for="return-rate">退货预留率（%）</label><input id="return-rate" type="number" min="0" max="95" step="0.01" required></div>
-            <div class="field"><label for="operating-rate">运营费率（%）</label><input id="operating-rate" type="number" min="0" max="95" step="0.01" required></div>
-          </div>
-          <div class="pricing-group"><h3>方案参数</h3>
-            <div data-plan="margin">
-              <div class="field"><label for="target-margin">目标利润率（%）</label><input id="target-margin" type="number" min="0" max="95" step="0.01" required></div>
-              <div class="field"><label for="minimum-multiplier">最低商品成本倍数</label><input id="minimum-multiplier" type="number" min="1" max="100" step="0.01" required></div>
+      <div class="panel-head"><div><div class="eyebrow">Pricing · USD / 件</div><h2 id="pricing-title">定价工作台</h2>
+        <p class="pricing-lede">用同一组成本比较两套方案，看清售价与预估利润，再保存用于后续商品预览。</p></div>
+        <span id="pricing-status" class="pricing-state" role="status">正在读取设置…</span></div>
+      <form id="pricing-form" novalidate>
+        <fieldset id="pricing-controls" disabled style="border:0;padding:0;margin:0;min-width:0">
+          <legend class="hint">金额统一为 USD / 件。所有试算在本机完成，成本与定价参数不会发送给 AI。</legend>
+          <div class="cost-sample">
+            <h3>1. 输入一件商品的试算成本</h3>
+            <div class="pricing-grid">
+              <div class="field"><label for="preview-product-cost">商品成本（USD/件）</label><input id="preview-product-cost" type="number" min="0" max="1000000" step="any" value="8.50" required></div>
+              <div class="field"><label for="preview-inbound">入境运费（USD/件）</label><input id="preview-inbound" type="number" min="0" max="1000000" step="any" value="0" required></div>
+              <div class="field"><label for="preview-last-mile">尾程 / 整段运费（USD/件）</label><input id="preview-last-mile" type="number" min="0" max="1000000" step="any" value="4.71" required></div>
             </div>
-            <div data-plan="cost_multiplier">
-              <div class="field"><label for="cost-multiplier">自定义商品成本倍数</label><input id="cost-multiplier" type="number" min="1" max="100" step="0.01" required></div>
-              <p class="hint">默认 3×，允许 1–100×（包括 10×）。只放大商品成本。</p>
+            <p class="hint">这三个试算值不会保存，正式预览使用每个商品自己的成本和运费。CJ 整段运费只填一次：若填在最后一栏，请把入境运费设为 0，避免重复计算。</p>
+            <section id="fx-converter" class="fx-card" aria-labelledby="fx-title">
+              <h4 id="fx-title">运费汇率换算</h4>
+              <p class="hint fx-intro">将上方尾程 / 整段运费从 USD 换算为其他货币。</p>
+              <div class="fx-controls">
+                <div class="field"><label for="fx-currency">目标货币</label><select id="fx-currency"></select></div>
+                <div class="field"><label for="fx-mode">汇率方式</label><select id="fx-mode"><option value="reference">每日参考汇率</option><option value="manual">手动汇率</option></select></div>
+                <div id="fx-manual-field" class="field" hidden><label for="fx-rate" id="fx-rate-label">每 1 USD 可兑换的目标货币</label><input id="fx-rate" type="number" min="0" max="1000000" step="any" inputmode="decimal" aria-describedby="fx-error"></div>
+              </div>
+              <div id="fx-result-row" class="fx-result-row" aria-live="polite" aria-atomic="true" aria-busy="true">
+                <div><small>上方运费 · USD / 件</small><output id="fx-from">—</output></div><span class="fx-arrow" aria-hidden="true">→</span>
+                <div><small>换算后 / 件</small><output id="fx-result">—</output></div>
+              </div>
+              <div class="fx-rate-line"><b id="fx-equation">—</b><span id="fx-status" class="hint" role="status">等待参考汇率…</span></div>
+              <p id="fx-error" class="hint" role="alert" hidden></p>
+              <div class="fx-footer"><button id="fx-refresh" class="secondary" type="button">刷新参考汇率</button><a href="https://frankfurter.dev/v1/" target="_blank" rel="noopener noreferrer">汇率来源</a></div>
+              <p class="hint">参考汇率按工作日更新，不是银行实时成交价。换算仅供查看，不保存汇率、不修改 USD 定价；金额不会发送给汇率服务。</p>
+            </section>
+          </div>
+          <div class="pricing-results" id="pricing-results" aria-busy="true">
+            <h3>2. 比较售价与预估利润</h3>
+            <div id="pricing-preview-status" class="hint" role="status">等待试算…</div>
+            <div id="pricing-error" class="pricing-error" role="alert" hidden></div>
+            <div class="comparison">
+              <article class="plan-card" id="plan-margin">
+                <h3>方案 A · 完整利润率</h3>
+                <p class="plan-description">覆盖费用与预留，再按目标利润率计算；同时检查最低售价和最低成本倍数。</p>
+                <div class="plan-price"><output id="compare-margin-price">—</output> <small>USD / 件</small></div>
+                <div class="plan-stats"><div><span>预估每件利润</span><output id="compare-margin-profit">—</output></div><div><span>预估利润率</span><output id="compare-margin-margin">—</output></div></div>
+                <p id="compare-margin-note" class="plan-note">等待试算…</p>
+                <button class="secondary" type="button" data-select-plan="margin" aria-pressed="true">当前选用方案 A</button>
+              </article>
+              <article class="plan-card" id="plan-cost_multiplier">
+                <h3>方案 B · 商品成本倍数</h3>
+                <p class="plan-description">商品成本乘倍数，再加运费、预估税费和固定支付费；百分比费用从利润中扣除。</p>
+                <div class="plan-price"><output id="compare-cost_multiplier-price">—</output> <small>USD / 件</small></div>
+                <div class="plan-stats"><div><span>预估每件利润</span><output id="compare-cost_multiplier-profit">—</output></div><div><span>预估利润率</span><output id="compare-cost_multiplier-margin">—</output></div></div>
+                <p id="compare-cost_multiplier-note" class="plan-note">等待试算…</p>
+                <button class="secondary" type="button" data-select-plan="cost_multiplier" aria-pressed="false">使用方案 B</button>
+              </article>
             </div>
-            <div class="field"><label for="minimum-price">最低售价（USD）</label><input id="minimum-price" type="number" min="0" max="1000000" step="0.01" required></div>
-            <div class="field"><label for="tax-duties">每件预估税费/关税（USD）</label><input id="tax-duties" type="number" min="0" max="1000000" step="0.01" required></div>
-            <div class="warning">税费/关税是你手动填写的估算值，不是税务建议；CatalogFlow 不会向供应商或海关自动查询。若 CJ 运费报价已含 taxes/clearance，请保持为 0，避免重复计算。</div>
           </div>
-          <div class="pricing-group"><h3>实时试算（不会保存）</h3>
-            <div class="field"><label for="preview-product-cost">商品成本（USD）</label><input id="preview-product-cost" type="number" min="0" max="1000000" step="0.01" value="8.50" required></div>
-            <div class="field"><label for="preview-inbound">入境运费（USD/件）</label><input id="preview-inbound" type="number" min="0" max="1000000" step="0.01" value="0" required></div>
-            <div class="field"><label for="preview-last-mile">尾程运费（USD/件）</label><input id="preview-last-mile" type="number" min="0" max="1000000" step="0.01" value="4.71" required></div>
-            <p class="hint">这里只测试公式。保存设置不会发布商品，也不会改写商店。</p>
+          <details class="pricing-settings" open>
+            <summary>3. 调整方案参数与费用</summary>
+            <div class="pricing-grid">
+              <div class="pricing-group"><h3>方案与目标</h3>
+                <div class="field"><label for="pricing-scheme">用于后续预览的方案</label><select id="pricing-scheme"><option value="margin">方案 A · 完整利润率</option><option value="cost_multiplier">方案 B · 商品成本倍数</option></select></div>
+                <div class="field"><label for="target-margin">目标利润率（%） <span class="field-tag">A 定价 / B 对照</span></label><input id="target-margin" type="number" min="0" max="95" step="any" required><div class="hint">以售价为分母，已经扣除下列费用与预留。</div></div>
+                <div class="field"><label for="minimum-multiplier">最低商品成本倍数 <span class="field-tag">仅 A 定价</span></label><input id="minimum-multiplier" type="number" min="1" max="100" step="any" required></div>
+                <div class="field"><label for="cost-multiplier">商品成本倍数 <span class="field-tag">仅 B 定价</span></label><input id="cost-multiplier" type="number" min="1" max="100" step="any" required><div class="hint">默认 3×，可填 1–100×。运费与税费不乘倍数。</div></div>
+              </div>
+              <div class="pricing-group"><h3>费用与预留</h3>
+                <p class="hint" style="margin-top:0">百分比均按最终售价估算。方案 B 用这些值评估利润，不自动提高售价。</p>
+                <div class="field"><label for="payment-fee-rate">支付费率（%）</label><input id="payment-fee-rate" type="number" min="0" max="95" step="any" required></div>
+                <div class="field"><label for="payment-fixed-fee">固定支付费（USD/件）</label><input id="payment-fixed-fee" type="number" min="0" max="10000" step="any" required><div class="hint">按一件商品一单估算；多件订单费用分摊暂不支持。</div></div>
+                <div class="field"><label for="return-rate">退货预留率（%）</label><input id="return-rate" type="number" min="0" max="95" step="any" required></div>
+                <div class="field"><label for="operating-rate">运营预留率（%）</label><input id="operating-rate" type="number" min="0" max="95" step="any" required></div>
+              </div>
+              <div class="pricing-group"><h3>税费与售价下限</h3>
+                <div class="field"><label for="minimum-price">最低售价（USD）</label><input id="minimum-price" type="number" min="0" max="1000000" step="any" required><div class="hint">两套方案都遵守此下限，并向上取 .95 尾数。</div></div>
+                <div class="field"><label for="tax-duties">每件预估税费/关税（USD）</label><input id="tax-duties" type="number" min="0" max="1000000" step="any" required></div>
+                <div class="warning">税费由你自行估算。若供应商运费已含相应税费或清关费，请不要再重复填写。保存后此估值会用于后续每个变体，需按商品复核。</div>
+              </div>
+            </div>
+          </details>
+          <div class="pricing-results">
+            <h3 id="breakdown-title">当前方案的费用明细</h3>
+            <div class="results-grid">
+              <table class="cost-table" aria-labelledby="breakdown-title"><tbody>
+                <tr><th scope="row">最终售价</th><td><output id="out-final">—</output></td></tr>
+                <tr><th scope="row">商品成本</th><td><output id="out-product">—</output></td></tr>
+                <tr><th scope="row">入境 + 尾程 / 整段运费</th><td><output id="out-shipping">—</output></td></tr>
+                <tr><th scope="row">预估税费 / 关税</th><td><output id="out-tax">—</output></td></tr>
+                <tr><th scope="row">支付费用（比例 + 固定）</th><td><output id="out-payment">—</output></td></tr>
+                <tr><th scope="row">退货预留</th><td><output id="out-return">—</output></td></tr>
+                <tr><th scope="row">运营预留</th><td><output id="out-operating">—</output></td></tr>
+                <tr class="total"><th scope="row">预估每件利润</th><td><output id="out-profit">—</output></td></tr>
+              </tbody></table>
+              <div class="price-explanation">
+                <p><b>这个售价是怎么来的？</b></p><p id="out-driver" class="hint">等待试算…</p>
+                <dl><dt>落地成本（含运费与预估税费）</dt><dd><output id="out-landed">—</output></dd>
+                  <dt>公式候选价</dt><dd><output id="out-primary">—</output></dd>
+                  <dt>下限检查后的价格</dt><dd><output id="out-raw">—</output></dd>
+                  <dt>.95 尾数向上调整</dt><dd><output id="out-rounding">—</output></dd>
+                  <dt>理论保本价（未取尾数）</dt><dd><output id="out-breakeven">—</output></dd>
+                  <dt>预估利润率</dt><dd><output id="out-margin">—</output></dd></dl>
+                <p class="pricing-footnote">预估利润 = 售价 − 落地成本 − 支付费用 − 退货与运营预留。各项按显示精度取整，可能存在尾差；不代表已实现的会计净利润。</p>
+              </div>
+            </div>
+            <details class="formula-details"><summary>查看两套公式与取整规则</summary><div id="pricing-formula" class="formula">A：max((落地成本 + 固定支付费) ÷ (1 − 支付费率 − 退货预留率 − 运营预留率 − 目标利润率), 商品成本 × 最低成本倍数, 最低售价)
+B：max(商品成本 × 商品成本倍数 + 运费 + 预估税费 + 固定支付费, 最低售价)
+落地成本 = 商品成本 + 运费 + 预估税费。
+两套方案均取不低于计算结果的最小 .95 结尾价格。
+方案 B 不使用百分比费率定价，但评估利润时仍扣除这些费用与预留。</div></details>
           </div>
-        </div>
-        <div id="pricing-formula" class="formula"></div>
-        <div class="breakdown" aria-live="polite">
-          <div class="metric"><span>商品成本</span><output id="out-product">—</output></div>
-          <div class="metric"><span>入境 + 尾程运费</span><output id="out-shipping">—</output></div>
-          <div class="metric"><span>预估税费/关税</span><output id="out-tax">—</output></div>
-          <div class="metric"><span>落地成本</span><output id="out-landed">—</output></div>
-          <div class="metric"><span>公式原始价格</span><output id="out-raw">—</output></div>
-          <div class="metric final"><span>向上取 .95 后售价</span><output id="out-final">—</output></div>
-        </div>
-        <div class="actions"><button class="primary" type="submit">保存本机定价设置</button></div>
+          <div class="pricing-save">
+            <div id="pricing-save-error" class="pricing-error" role="alert" hidden></div>
+            <p id="pricing-save-hint" class="hint">保存方案参数后，后续商品预览会使用这些设置。</p>
+            <div class="actions"><button class="primary" id="pricing-save" type="submit" disabled>保存本机定价设置</button>
+              <button class="secondary" id="pricing-undo" type="button" disabled>撤销参数修改</button>
+              <button class="secondary" id="pricing-defaults" type="button">恢复默认参数</button></div>
+            <p class="pricing-footnote">只有点击保存才会更改默认定价参数；恢复默认不会自动保存。已有预览和商店商品不会随之变化。</p>
+          </div>
+        </fieldset>
       </form>
     </section>
     <footer><span>备注保存在用户配置目录；秘密保存在系统凭据库。</span>
       <button id="stop" class="secondary" type="button">停止本机面板</button></footer>
   </div>
   <div id="toast" class="toast"></div>
+  <script src="/assets/dashboard-i18n.js"></script>
+  <script src="/assets/dashboard-fx.js"></script>
   <script>
     const token = new URLSearchParams(location.hash.slice(1)).get('token') || '';
     history.replaceState(null, '', location.pathname);
     const headers = {'Content-Type':'application/json', 'X-CatalogFlow-Token':token};
     let state = {providers:[], profiles:[], pricing:null};
     let pricingTimer = 0;
+    let freightConverter = null;
     const $ = id => document.getElementById(id);
     const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-    function toast(message, error=false) { const el=$('toast'); el.textContent=message; el.className='toast'+(error?' error':''); el.style.display='block'; setTimeout(()=>el.style.display='none',3600); }
+    let languageStorage;
+    try { languageStorage = window.localStorage; } catch (_) { /* Private browser mode may deny storage. */ }
+    const i18n = CatalogFlowI18n.create({storage:languageStorage, languages:navigator.languages || [navigator.language]});
+    const t = (source, params) => i18n.t(source, params);
+    const providerText = source => i18n.providerText(source);
+    const errorText = error => i18n.errorText(error);
+    // Capture only initial UI copy. Later user-entered names, notes, and secrets are never scanned.
+    const staticCopy = [], staticAttributes = [];
+    const walker = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const node = walker.currentNode, source = node.nodeValue.trim();
+      if (!node.parentElement.closest('script,style,#ui-language') && Object.hasOwn(CatalogFlowI18n.translations, source))
+        staticCopy.push({node, source, leading:node.nodeValue.match(/^\s*/)[0], trailing:node.nodeValue.match(/\s*$/)[0]});
+    }
+    document.querySelectorAll('[placeholder],[aria-label]').forEach(node => {
+      if (node.id === 'ui-language') return;
+      for (const attr of ['placeholder','aria-label']) {
+        const source=node.getAttribute(attr);
+        if (source && Object.hasOwn(CatalogFlowI18n.translations, source)) staticAttributes.push({node, attr, source});
+      }
+    });
+    function translateStaticCopy() {
+      document.documentElement.lang=i18n.locale;
+      $('ui-language').value=i18n.locale;
+      staticCopy.forEach(({node,source,leading,trailing}) => { if(node.isConnected) node.nodeValue=leading+t(source)+trailing; });
+      staticAttributes.forEach(({node,attr,source}) => node.setAttribute(attr,t(source)));
+    }
+    let toastContent = null, toastTimer = 0;
+    function renderToast() { if(toastContent) $('toast').textContent=typeof toastContent === 'function' ? toastContent() : toastContent; }
+    function toast(message, error=false) { const el=$('toast'); toastContent=message; renderToast(); el.className='toast'+(error?' error':''); el.style.display='block'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.style.display='none',5000); }
     async function api(path, options={}) { const response=await fetch(path,{...options,headers:{...headers,...options.headers}});
-      const data=await response.json(); if(!response.ok) throw new Error(data.error||'请求失败'); return data; }
+      const data=await response.json(); if(!response.ok) throw new Error(data.error||'request_failed'); return data; }
     function providerById(id) { return state.providers.find(item=>item.id===id); }
     function providerOptions() { const groups=[['store','商店发布'],['source','供应商来源'],['ai','本地 AI']];
       return groups.map(([category,label])=>{const items=state.providers.filter(item=>item.category===category);
-        return items.length?`<optgroup label="${label}">${items.map(item=>`<option value="${esc(item.id)}">${esc(item.name)}</option>`).join('')}</optgroup>`:'';}).join(''); }
+        return items.length?`<optgroup data-category="${category}" label="${esc(t(label))}">${items.map(item=>`<option value="${esc(item.id)}">${esc(item.name)}</option>`).join('')}</optgroup>`:'';}).join(''); }
+    function localizeProviderFields() {
+      const provider=providerById($('provider').value); if(!provider)return;
+      const availabilityLabel={available:'现在可用',preview:'预览版',planned:'连接器开发中'}[provider.availability] || '连接器开发中';
+      $('provider-note').textContent=t(availabilityLabel)+' · '+providerText(provider.description);
+      const categories={store:'商店发布',source:'供应商来源',ai:'本地 AI'};
+      document.querySelectorAll('[data-category]').forEach(group=>group.label=t(categories[group.dataset.category]));
+      provider.fields.forEach(field=> {
+        const input=$('provider-field-'+field.name);
+        if (!input) return;
+        $('provider-label-'+field.name).textContent=providerText(field.label);
+        input.placeholder=providerText(field.placeholder || '');
+      });
+      document.querySelectorAll('[data-saved-secret]').forEach(node=>node.textContent=' · '+t('已保存；留空保持原值'));
+      document.querySelectorAll('.reveal').forEach(button=>button.textContent=t(button.previousElementSibling.type==='password'?'显示':'隐藏'));
+    }
     function renderProviderFields(values={}, configured=[]) { const provider=providerById($('provider').value); if(!provider)return;
       $('provider-note').className='provider-note '+provider.availability;
-      const availabilityLabel={available:'现在可用',preview:'预览版',planned:'连接器开发中'}[provider.availability]||provider.availability;
-      $('provider-note').textContent=availabilityLabel+' · '+provider.description;
       $('dynamic-fields').innerHTML=provider.fields.map(field=>{ const current=field.secret?'':(values[field.name]||'');
-        const configuredHint=field.secret&&configured.includes(field.name)?' · 已保存；留空保持原值':'';
-        const input=`<input data-name="${esc(field.name)}" data-secret="${field.secret}" type="${esc(field.type)}" value="${esc(current)}" placeholder="${esc(field.placeholder||'')}" autocomplete="new-password">`;
-        return `<div class="field"><label>${esc(field.label)}<span class="hint">${configuredHint}</span></label>${field.secret?`<div class="secret-wrap">${input}<button class="reveal" type="button">显示</button></div>`:input}</div>`;
+        const configuredHint=field.secret&&configured.includes(field.name)?'<span class="hint" data-saved-secret></span>':'';
+        const input=`<input id="provider-field-${esc(field.name)}" data-name="${esc(field.name)}" data-secret="${field.secret}" type="${esc(field.type)}" value="${esc(current)}" autocomplete="new-password">`;
+        return `<div class="field"><label for="provider-field-${esc(field.name)}"><span id="provider-label-${esc(field.name)}"></span>${configuredHint}</label>${field.secret?`<div class="secret-wrap">${input}<button class="reveal" type="button"></button></div>`:input}</div>`;
       }).join('');
-      document.querySelectorAll('.reveal').forEach(button=>button.onclick=()=>{const input=button.previousElementSibling; input.type=input.type==='password'?'text':'password'; button.textContent=input.type==='password'?'显示':'隐藏';}); }
-    function resetForm() { $('profile-id').value=''; $('form-title').textContent='新增连接'; $('label').value=''; $('notes').value=''; $('is-default').checked=false; $('provider').disabled=false; $('cancel-edit').hidden=true; renderProviderFields(); }
+      localizeProviderFields();
+      document.querySelectorAll('.reveal').forEach(button=>button.onclick=()=>{const input=button.previousElementSibling; input.type=input.type==='password'?'text':'password'; button.textContent=t(input.type==='password'?'显示':'隐藏');}); }
+    function resetForm() { $('profile-id').value=''; $('form-title').textContent=t('新增连接'); $('label').value=''; $('notes').value=''; $('is-default').checked=false; $('provider').disabled=false; $('cancel-edit').hidden=true; renderProviderFields(); }
     function editProfile(id) { const profile=state.profiles.find(item=>item.id===id); if(!profile)return; $('profile-id').value=profile.id;
-      $('form-title').textContent='编辑连接'; $('provider').value=profile.provider; $('provider').disabled=true; $('label').value=profile.label;
+      $('form-title').textContent=t('编辑连接'); $('provider').value=profile.provider; $('provider').disabled=true; $('label').value=profile.label;
       $('notes').value=profile.notes; $('is-default').checked=profile.is_default; $('cancel-edit').hidden=false;
       renderProviderFields(profile.values, profile.configured_secret_fields); scrollTo({top:0,behavior:'smooth'}); }
-    function renderProfiles() { const box=$('profiles'); if(!state.profiles.length){box.innerHTML='<div class="empty">还没有连接。先在左边选择渠道并保存。</div>';return;}
+    function renderProfiles() { const box=$('profiles'); if(!state.profiles.length){box.innerHTML=`<div class="empty">${esc(t('还没有连接。先在左边选择渠道并保存。'))}</div>`;return;}
       box.innerHTML=state.profiles.map(profile=>{ const provider=providerById(profile.provider); const secrets=profile.configured_secret_fields.length;
-        return `<article class="card"><div class="card-top"><div><h3>${esc(profile.label)}</h3><div class="sub">${esc(provider?.name||profile.provider)}</div></div>${profile.is_default?'<span class="badge ok">默认</span>':''}</div>
-          <div class="badges"><span class="badge ${provider?.availability==='available'?'ok':'wait'}">${provider?.availability==='available'?'连接器可用':provider?.availability==='preview'?'连接器预览版':'连接器开发中'}</span><span class="badge">${secrets} 项密钥已保存</span></div>
-          ${profile.notes?`<p class="notes">${esc(profile.notes)}</p>`:''}<div class="card-actions"><button class="secondary" data-edit="${esc(profile.id)}">编辑</button><button class="danger" data-delete="${esc(profile.id)}">删除</button></div></article>`; }).join('');
+        return `<article class="card"><div class="card-top"><div><h3>${esc(profile.label)}</h3><div class="sub">${esc(provider?.name||profile.provider)}</div></div>${profile.is_default?`<span class="badge ok">${esc(t('默认'))}</span>`:''}</div>
+          <div class="badges"><span class="badge ${provider?.availability==='available'?'ok':'wait'}">${esc(t(provider?.availability==='available'?'连接器可用':provider?.availability==='preview'?'连接器预览版':'连接器开发中'))}</span><span class="badge">${esc(t('{count} 项密钥已保存',{count:secrets}))}</span></div>
+          ${profile.notes?`<p class="notes">${esc(profile.notes)}</p>`:''}<div class="card-actions"><button class="secondary" data-edit="${esc(profile.id)}">${esc(t('编辑'))}</button><button class="danger" data-delete="${esc(profile.id)}">${esc(t('删除'))}</button></div></article>`; }).join('');
       document.querySelectorAll('[data-edit]').forEach(button=>button.onclick=()=>editProfile(button.dataset.edit));
       document.querySelectorAll('[data-delete]').forEach(button=>button.onclick=()=>removeProfile(button.dataset.delete)); }
-    const money = value => Number.isFinite(Number(value)) ? '$'+Number(value).toFixed(2) : '—';
-    function pricingSettingsFromForm() { return {
-      scheme:$('pricing-scheme').value,
-      payment_fee_rate:$('payment-fee-rate').valueAsNumber/100,
-      payment_fixed_fee:$('payment-fixed-fee').valueAsNumber,
-      return_rate:$('return-rate').valueAsNumber/100,
-      operating_rate:$('operating-rate').valueAsNumber/100,
-      target_margin:$('target-margin').valueAsNumber/100,
-      minimum_price:$('minimum-price').valueAsNumber,
-      minimum_multiplier:$('minimum-multiplier').valueAsNumber,
-      tax_duties_per_unit:$('tax-duties').valueAsNumber,
-      cost_multiplier:$('cost-multiplier').valueAsNumber
-    }; }
-    function pricingCostsFromForm() { return {
-      product_cost:$('preview-product-cost').valueAsNumber,
-      inbound_shipping:$('preview-inbound').valueAsNumber,
-      last_mile:$('preview-last-mile').valueAsNumber
-    }; }
-    function renderPricingPlan() { const scheme=$('pricing-scheme').value;
-      document.querySelectorAll('[data-plan]').forEach(el=>el.classList.toggle('plan-hidden',el.dataset.plan!==scheme));
-      $('pricing-formula').textContent=scheme==='margin'
-        ? '方案 A：\n落地成本 = 商品成本 + 入境运费 + 尾程运费 + 每件预估税费/关税\n原始价格 = max((落地成本 + 固定支付费) ÷ (1 - 支付费率 - 退货预留率 - 运营费率 - 目标利润率), 商品成本 × 最低成本倍数, 最低售价)\n最终售价 = 不低于原始价格的最小 .95 结尾价格'
-        : '方案 B：\n原始价格 = max(商品成本 × 自定义倍数 + 入境运费 + 尾程运费 + 每件预估税费/关税 + 固定支付费, 最低售价)\n最终售价 = 不低于原始价格的最小 .95 结尾价格\n注意：运费与税费只加一次，不随倍数放大；方案 B 不使用百分比费率。'; }
-    function loadPricingForm(settings) { if(!settings)return;
-      $('pricing-scheme').value=settings.scheme;
-      $('payment-fee-rate').value=settings.payment_fee_rate*100;
-      $('payment-fixed-fee').value=settings.payment_fixed_fee;
-      $('return-rate').value=settings.return_rate*100;
-      $('operating-rate').value=settings.operating_rate*100;
-      $('target-margin').value=settings.target_margin*100;
-      $('minimum-price').value=settings.minimum_price;
-      $('minimum-multiplier').value=settings.minimum_multiplier;
-      $('tax-duties').value=settings.tax_duties_per_unit;
-      $('cost-multiplier').value=settings.cost_multiplier;
-      renderPricingPlan(); schedulePricingPreview(); }
+    const money = value => i18n.money(value);
+    const percent = value => i18n.percent(value);
+    const pricingBindings = {
+      payment_fee_rate:'payment-fee-rate', payment_fixed_fee:'payment-fixed-fee',
+      return_rate:'return-rate', operating_rate:'operating-rate', target_margin:'target-margin',
+      minimum_price:'minimum-price', minimum_multiplier:'minimum-multiplier',
+      tax_duties_per_unit:'tax-duties', cost_multiplier:'cost-multiplier'
+    };
+    const rateFields = new Set(['payment_fee_rate','return_rate','operating_rate','target_margin']);
+    const costBindings = {product_cost:'preview-product-cost', inbound_shipping:'preview-inbound', last_mile:'preview-last-mile'};
+    let pricingReady = false, pricingSaving = false, pricingRevision = 0, pricingRequest = null;
+    function pricingSettingsFromForm() {
+      const settings = {scheme:$('pricing-scheme').value};
+      for (const [key,id] of Object.entries(pricingBindings)) settings[key] = $(id).valueAsNumber / (rateFields.has(key) ? 100 : 1);
+      return settings;
+    }
+    function pricingCostsFromForm() {
+      return Object.fromEntries(Object.entries(costBindings).map(([key,id]) => [key,$(id).valueAsNumber]));
+    }
+    function settingsKey(settings) {
+      return JSON.stringify(Object.keys(settings).sort().map(key => [key, typeof settings[key] === 'number' ? Number(settings[key].toPrecision(12)) : settings[key]]));
+    }
+    function pricingIsDirty() { return pricingReady && settingsKey(pricingSettingsFromForm()) !== settingsKey(state.pricing); }
+    function fieldIssue(ids) {
+      let first = '';
+      for (const id of ids) {
+        const input = $(id), invalid = !input.validity.valid || !Number.isFinite(input.valueAsNumber);
+        input.setAttribute('aria-invalid', String(invalid));
+        if (invalid && !first) {
+          const label = document.querySelector('label[for="' + id + '"]').textContent.trim();
+          first = t('请检查「{label}」：填写 {min}–{max} 范围内的数字。', {label,min:input.min,max:input.max});
+        }
+      }
+      return first;
+    }
+    function settingsIssue() {
+      const issue = fieldIssue(Object.values(pricingBindings));
+      if (issue) return issue;
+      const settings = pricingSettingsFromForm();
+      const common = settings.payment_fee_rate + settings.return_rate + settings.operating_rate;
+      if (common >= 1) return t('支付费率、退货预留率与运营预留率合计必须小于 100%，才能计算保本价。');
+      if (settings.scheme === 'margin' && common + settings.target_margin >= 1)
+        return t('方案 A 的费用、预留与目标利润率合计必须小于 100%。请降低比率，或切换方案 B。');
+      return '';
+    }
+    function updatePricingControls() {
+      if (!pricingReady) return;
+      const dirty = pricingIsDirty();
+      $('pricing-status').textContent = t(pricingSaving ? '正在保存…' : dirty ? '参数已修改 · 尚未保存' : '当前为已保存 / 默认参数');
+      $('pricing-status').classList.toggle('dirty', dirty);
+      $('pricing-save').disabled = pricingSaving || !dirty || Boolean(settingsIssue());
+      $('pricing-undo').disabled = pricingSaving || !dirty;
+      $('pricing-defaults').disabled = pricingSaving;
+      $('pricing-save-hint').textContent = t(dirty
+        ? '页面参数尚未保存。点击保存后，后续商品预览才会使用这些修改。'
+        : '当前参数与本机设置一致。修改试算成本和运费不会改变默认参数，也不会保存这些试算值。');
+    }
+    function renderPricingPlan() {
+      const scheme = $('pricing-scheme').value;
+      document.querySelectorAll('[data-select-plan]').forEach(button => {
+        const selected = button.dataset.selectPlan === scheme;
+        button.setAttribute('aria-pressed', String(selected));
+        button.textContent = t(selected ? '当前选用方案 {plan}' : '使用方案 {plan}', {plan:button.dataset.selectPlan === 'margin' ? 'A' : 'B'});
+        button.className = selected ? 'primary' : 'secondary';
+        $('plan-' + button.dataset.selectPlan).classList.toggle('selected', selected);
+      });
+      $('breakdown-title').textContent = t('当前方案 {plan} · 每件费用明细', {plan:scheme === 'margin' ? 'A' : 'B'});
+    }
+    function loadPricingForm(settings) {
+      $('pricing-scheme').value = settings.scheme;
+      for (const [key,id] of Object.entries(pricingBindings)) {
+        const value = settings[key] * (rateFields.has(key) ? 100 : 1);
+        $(id).value = Number(value.toPrecision(15));
+      }
+      renderPricingPlan();
+    }
+    function clearPricingResults(message) {
+      document.querySelectorAll('#pricing-form output').forEach(output => {
+        if (output.closest('#fx-converter')) return;
+        output.textContent='—'; output.classList.remove('loss');
+      });
+      document.querySelectorAll('.plan-note').forEach(note => { note.textContent=message; note.className='plan-note'; });
+      $('out-driver').textContent=message;
+    }
+    function renderComparison(comparison, settings) {
+      for (const scheme of ['margin','cost_multiplier']) {
+        const result = comparison[scheme], prefix = 'compare-' + scheme + '-', note = $(prefix+'note');
+        if (!result?.breakdown) {
+          $(prefix+'price').textContent = t('暂不可用');
+          note.className = 'plan-note caution';
+          note.textContent = t(scheme === 'margin'
+            ? '方案 A 在当前参数下无法试算。请检查费率合计是否小于 100%，以及成本或目标利润率是否过高。'
+            : '当前参数无法计算此方案，请检查参数范围。');
+          continue;
+        }
+        const item = result.breakdown;
+        $(prefix+'price').textContent = money(item.final_price);
+        $(prefix+'profit').textContent = money(item.estimated_profit);
+        $(prefix+'profit').classList.toggle('loss', item.estimated_profit < 0);
+        $(prefix+'margin').textContent = percent(item.estimated_margin);
+        if (item.estimated_profit < 0) {
+          note.className='plan-note loss';
+          note.textContent=t('按当前费用估算会亏损。理论保本价为 {price}；请调整倍数或成本。', {price:money(item.break_even_price)});
+        } else if (item.estimated_margin + 0.000001 < settings.target_margin) {
+          note.className='plan-note caution';
+          note.textContent=t('低于 {margin} 的目标利润率。成本倍数方案不会自动补足目标利润。', {margin:percent(settings.target_margin)});
+        } else {
+          note.className='plan-note';
+          note.textContent=t('当前试算达到 {margin} 的目标利润率；仍需核实商品实际成本与费用。', {margin:percent(settings.target_margin)});
+        }
+      }
+    }
     function renderBreakdown(item) {
-      $('out-product').textContent=money(item.product_cost);
-      $('out-shipping').textContent=money(item.inbound_shipping+item.last_mile);
-      $('out-tax').textContent=money(item.tax_duties_per_unit);
-      $('out-landed').textContent=money(item.landed_cost);
-      $('out-raw').textContent=money(item.raw_price);
-      $('out-final').textContent=money(item.final_price); }
-    async function previewPricing() { const settings=pricingSettingsFromForm(), costs=pricingCostsFromForm();
-      if([...Object.values(settings).filter(value=>typeof value==='number'),...Object.values(costs)].some(value=>!Number.isFinite(value)))return;
-      try { const result=await api('/api/pricing/preview',{method:'POST',body:JSON.stringify({settings,costs})}); renderBreakdown(result.breakdown); }
-      catch(error) { toast('定价试算失败：'+error.message,true); } }
-    function schedulePricingPreview() { clearTimeout(pricingTimer); pricingTimer=setTimeout(previewPricing,180); }
-    async function refresh() { state=await api('/api/state'); $('provider').innerHTML=providerOptions(); renderProviderFields(); renderProfiles(); loadPricingForm(state.pricing); }
-    async function removeProfile(id) { if(!confirm('删除这个连接档案和它保存在系统凭据库中的密钥？'))return; try{await api('/api/profiles/'+encodeURIComponent(id),{method:'DELETE'}); toast('连接已删除'); await refresh(); resetForm();}catch(error){toast(error.message,true);} }
-    $('profile-form').onsubmit=async event=>{event.preventDefault(); const values={}, secrets={}; document.querySelectorAll('#dynamic-fields input').forEach(input=>{if(input.value.trim())(input.dataset.secret==='true'?secrets:values)[input.dataset.name]=input.value.trim();});
+      const amounts = {
+        'out-final':item.final_price, 'out-product':item.product_cost,
+        'out-shipping':item.inbound_shipping+item.last_mile, 'out-tax':item.tax_duties_per_unit,
+        'out-payment':item.payment_percentage_fee+item.payment_fixed_fee,
+        'out-return':item.return_reserve, 'out-operating':item.operating_reserve,
+        'out-profit':item.estimated_profit, 'out-landed':item.landed_cost,
+        'out-primary':item.primary_candidate, 'out-raw':item.raw_price,
+        'out-rounding':item.rounding_adjustment, 'out-breakeven':item.break_even_price
+      };
+      for (const [id,value] of Object.entries(amounts)) $(id).textContent = money(value);
+      $('out-margin').textContent = percent(item.estimated_margin);
+      $('out-profit').classList.toggle('loss', item.estimated_profit < 0);
+      const explanations = {
+        formula:'公式候选价已达到所有适用下限，因此以公式结果为基础，再向上取 .95 尾数。',
+        minimum_price:'最低售价下限生效：公式候选价较低，先提升至最低售价，再向上取 .95 尾数。',
+        minimum_multiplier:'最低商品成本倍数下限生效：先提升至商品成本 × 最低倍数，再向上取 .95 尾数。'
+      };
+      $('out-driver').textContent = t(explanations[item.price_driver] || '按所选方案计算，并检查适用下限。');
+    }
+    async function previewPricing(revision) {
+      const settings = pricingSettingsFromForm(), costs = pricingCostsFromForm();
+      const controller = new AbortController();
+      pricingRequest = controller;
+      try {
+        const result = await api('/api/pricing/preview', {method:'POST',body:JSON.stringify({settings,costs}),signal:controller.signal});
+        if (revision !== pricingRevision) return;
+        renderComparison(result.comparison, settings);
+        renderBreakdown(result.breakdown);
+        $('pricing-preview-status').textContent = t('已按当前输入更新 · 金额为 USD / 件');
+      } catch(error) {
+        if (revision !== pricingRevision || error.name === 'AbortError') return;
+        clearPricingResults(t('试算暂不可用'));
+        $('pricing-error').textContent = t('试算失败，请检查参数或本机面板连接：{error}', {error:errorText(error)});
+        $('pricing-error').hidden = false;
+        $('pricing-preview-status').textContent = t('试算失败，未显示旧结果');
+      } finally {
+        if (revision === pricingRevision) { $('pricing-results').setAttribute('aria-busy','false'); pricingRequest=null; }
+      }
+    }
+    function schedulePricingPreview() {
+      if (!pricingReady) return;
+      const revision = ++pricingRevision;
+      clearTimeout(pricingTimer);
+      pricingRequest?.abort();
+      pricingRequest = null;
+      renderPricingPlan();
+      updatePricingControls();
+      clearPricingResults(t('等待有效试算…'));
+      const issue = settingsIssue() || fieldIssue(Object.values(costBindings));
+      $('pricing-error').hidden = !issue;
+      $('pricing-error').textContent = issue;
+      $('pricing-results').setAttribute('aria-busy', String(!issue));
+      $('pricing-preview-status').textContent = t(issue ? '输入需要修正，旧试算结果已清除' : '正在重新试算…');
+      if (!issue) pricingTimer = setTimeout(() => previewPricing(revision), 180);
+    }
+    async function refresh() {
+      const incoming = await api('/api/state');
+      state.providers = incoming.providers;
+      state.profiles = incoming.profiles;
+      $('provider').innerHTML=providerOptions();
+      renderProviderFields(); renderProfiles();
+      if (!pricingReady) {
+        state.pricing = incoming.pricing;
+        state.pricing_defaults = incoming.pricing_defaults;
+        loadPricingForm(state.pricing);
+        pricingReady = true;
+        $('pricing-controls').disabled = false;
+        schedulePricingPreview();
+        freightConverter=CatalogFlowFX.mount({container:$('fx-converter'),amountInput:$('preview-last-mile'),i18n,loadRates:()=>api('/api/exchange-rates')});
+      }
+    }
+    async function removeProfile(id) { if(!confirm(t('删除这个连接档案和它保存在系统凭据库中的密钥？')))return; try{await api('/api/profiles/'+encodeURIComponent(id),{method:'DELETE'}); toast(()=>t('连接已删除')); await refresh(); resetForm();}catch(error){toast(()=>errorText(error),true);} }
+    $('profile-form').onsubmit=async event=>{event.preventDefault();
+      if (!$('label').value.trim() || !$('label').validity.valid) { toast(()=>t('请填写连接名称（1–80 个字符）。'),true); $('label').focus(); return; }
+      const invalidUrl=Array.from(document.querySelectorAll('#dynamic-fields input[type="url"]')).find(input=>!input.validity.valid);
+      if (invalidUrl) { toast(()=>t('请检查「{label}」的网址格式。',{label:document.querySelector('label[for="'+invalidUrl.id+'"]').textContent}),true); invalidUrl.focus(); return; }
+      const values={}, secrets={}; document.querySelectorAll('#dynamic-fields input').forEach(input=>{if(input.value.trim())(input.dataset.secret==='true'?secrets:values)[input.dataset.name]=input.value.trim();});
       const payload={id:$('profile-id').value||null,provider:$('provider').value,label:$('label').value,notes:$('notes').value,is_default:$('is-default').checked,values,secrets};
-      try{await api('/api/profiles',{method:'POST',body:JSON.stringify(payload)}); toast('连接已安全保存'); await refresh(); resetForm();}catch(error){toast(error.message,true);} };
-    $('pricing-form').addEventListener('input',schedulePricingPreview);
-    $('pricing-scheme').onchange=()=>{renderPricingPlan();schedulePricingPreview();};
-    $('pricing-form').onsubmit=async event=>{event.preventDefault(); if(!event.currentTarget.reportValidity())return;
-      try{const result=await api('/api/pricing',{method:'POST',body:JSON.stringify(pricingSettingsFromForm())}); state.pricing=result.pricing; loadPricingForm(result.pricing); toast('定价设置已保存到本机 pricing.json');}
-      catch(error){toast('定价保存失败：'+error.message,true);} };
+      try{await api('/api/profiles',{method:'POST',body:JSON.stringify(payload)}); toast(()=>t('连接已安全保存')); await refresh(); resetForm();}catch(error){toast(()=>errorText(error),true);} };
+    $('pricing-form').addEventListener('input', event => { if(event.target.closest('#fx-converter')) return; $('pricing-save-error').hidden=true; schedulePricingPreview(); });
+    $('pricing-scheme').addEventListener('change', schedulePricingPreview);
+    document.querySelectorAll('[data-select-plan]').forEach(button => button.onclick=()=> {
+      $('pricing-scheme').value=button.dataset.selectPlan;
+      schedulePricingPreview();
+    });
+    $('pricing-undo').onclick=()=> { loadPricingForm(state.pricing); $('pricing-save-error').hidden=true; schedulePricingPreview(); };
+    $('pricing-defaults').onclick=()=> { loadPricingForm(state.pricing_defaults); $('pricing-save-error').hidden=true; schedulePricingPreview(); toast(()=>t('已恢复默认参数；点击保存后才会生效。')); };
+    let pricingSaveError = null;
+    function renderSaveError() {
+      if ($('pricing-save-error').hidden) return;
+      $('pricing-save-error').textContent=pricingSaveError
+        ? t('保存失败，页面修改仍然保留。{error}', {error:errorText(pricingSaveError)}) : settingsIssue();
+    }
+    $('pricing-form').onsubmit=async event=> {
+      event.preventDefault();
+      if (!pricingReady || pricingSaving || !pricingIsDirty()) return;
+      const issue=settingsIssue();
+      if (issue) { pricingSaveError=null; $('pricing-save-error').textContent=issue; $('pricing-save-error').hidden=false; return; }
+      const settings=pricingSettingsFromForm();
+      pricingSaving=true; updatePricingControls(); $('pricing-save-error').hidden=true;
+      try {
+        const result=await api('/api/pricing',{method:'POST',body:JSON.stringify(settings)});
+        state.pricing=result.pricing;
+        toast(()=>t('定价参数已保存，后续商品预览将使用这些设置。'));
+      } catch(error) {
+        pricingSaveError=error;
+        $('pricing-save-error').hidden=false;
+        renderSaveError();
+      } finally { pricingSaving=false; updatePricingControls(); }
+    };
+    window.addEventListener('beforeunload', event=> { if (pricingIsDirty() || pricingSaving) { event.preventDefault(); event.returnValue=''; } });
     $('provider').onchange=()=>renderProviderFields(); $('cancel-edit').onclick=resetForm;
-    $('stop').onclick=async()=>{try{await api('/api/shutdown',{method:'POST',body:'{}'}); document.body.innerHTML='<div class="shell"><section class="panel"><h1>面板已停止</h1><p>可以关闭这个页面。</p></section></div>';}catch(error){toast(error.message,true);}};
-    refresh().catch(error=>toast('无法打开配置：'+error.message,true));
+    $('ui-language').onchange=()=> {
+      i18n.setLocale($('ui-language').value);
+      translateStaticCopy();
+      $('form-title').textContent=t($('profile-id').value?'编辑连接':'新增连接');
+      localizeProviderFields(); renderProfiles(); renderToast();
+      schedulePricingPreview(); renderSaveError();
+      freightConverter?.localize();
+    };
+    $('stop').onclick=async()=>{try{await api('/api/shutdown',{method:'POST',body:'{}'}); document.body.innerHTML=`<div class="shell"><section class="panel"><h1>${esc(t('面板已停止'))}</h1><p>${esc(t('可以关闭这个页面。'))}</p></section></div>`;}catch(error){toast(()=>errorText(error),true);}};
+    translateStaticCopy();
+    refresh().catch(error=>toast(()=>t('无法打开配置：{error}', {error:errorText(error)}),true));
   </script>
 </body>
 </html>

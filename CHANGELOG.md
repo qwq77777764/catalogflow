@@ -4,9 +4,25 @@ All notable changes are documented here.
 
 ## Unreleased
 
+## 0.5.0 — 2026-09-12
+
+- Added a bilingual last-mile shipping currency converter with selectable currencies, daily
+  Frankfurter reference rates, visible rate dates and sources, manual rates, and retry handling.
+  Conversion stays separate from USD pricing and saved settings; amounts and credentials never
+  reach the rate service, and manual inputs survive language changes and late responses.
+- Added a whole-dashboard Chinese (CN) / English (US) language selector with bundled translations,
+  browser-language defaults, and a per-origin language preference. Switching preserves entered
+  values and pending edits, keeps amounts in USD, and does not save pricing automatically.
+- Kept pricing edits through connection refreshes and save failures; cleared invalid or outdated
+  previews and handled cancelled preview connections without server tracebacks.
+
 - Added a loopback-only visual pricing panel with a default margin plan, editable cost-multiplier
   plan, live breakdown, optional operator tax/duty estimate, and atomic non-secret `pricing.json`
   settings.
+- Expanded visual pricing with side-by-side plan comparisons, fee/reserve deductions, estimated
+  unit profit and margin, theoretical break-even prices, `.95` adjustments, and price-floor reasons.
+  Added explicit unsaved/default-reset controls and dashboard-to-CLI per-variant pricing regression
+  coverage while preserving both pricing formulas and the existing settings format.
 - Added a preview CJ official API source adapter for one explicit CJ product URL or PID.
 - Added in-memory CJ token exchange, fixed-host/no-redirect network enforcement, bounded JSON,
   redacted provider errors, product-ID matching, and synthetic contract tests.
