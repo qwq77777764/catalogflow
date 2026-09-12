@@ -80,6 +80,16 @@ test('all initial dashboard copy has an English translation, except bilingual la
   }
 });
 
+test('formula errors explain zero division and allowed arithmetic in both languages', () => {
+  const ui=create({languages:['en-US']});
+  assert.match(ui.errorText(new Error('cost_formula_division_by_zero')), /divide by zero/);
+  assert.match(ui.errorText(new Error('cost_formula_invalid')), /120 characters/);
+  assert.match(ui.errorText(new Error('cost_formula_result_out_of_range')), /100,000,000/);
+  ui.setLocale('zh-CN');
+  assert.match(ui.errorText(new Error('cost_formula_division_by_zero')), /不能除以 0/);
+  assert.match(ui.errorText(new Error('cost_formula_invalid')), /成本公式/);
+});
+
 test('dynamic Chinese source strings also have English translations', () => {
   const html=fs.readFileSync(path.join(__dirname,'../src/catalogflow/dashboard.html'),'utf8');
   const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];

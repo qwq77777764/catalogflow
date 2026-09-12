@@ -102,12 +102,14 @@ theoretical break-even price, `.95` adjustment, and any minimum-price constraint
 - **Margin plan (default):** adds product cost, per-unit shipping, optional user-estimated taxes or
   duties, payment fees, return reserve, operating reserve, target margin, minimum price, and a
   minimum product-cost multiple. It preserves the original `.95` price ending.
-- **Cost-multiplier plan:** starts with `product cost × multiplier` (default `3×`, editable from
-  `1×` to `100×`), then adds shipping, optional estimated taxes or duties, and the fixed payment
-  fee once. Shipping and taxes are not silently multiplied. It also uses the `.95` ending.
+- **Custom cost-formula plan:** edit the formula directly in Plan B's card (default `*3`).
+  Use `*5`, `/5`, `+2`, `-2`, `*3+2`, or `*(5+2)/3`; a plain `5` means `*5`.
+  The formula applies to product cost with normal operator precedence. Shipping, estimated
+  duties, and the fixed payment fee are added once afterward; minimum price and `.95` rounding
+  still apply. The card shows the formula subtotal and the additions before the final price.
 
 Plan B does not use percentage fees or reserves to set its price, but the profit estimate deducts
-them. It does not automatically achieve the target margin; a low multiplier can produce a loss.
+them. It does not automatically achieve the target margin; a low formula result can produce a loss.
 Estimated profit covers the entered costs and reserves, not accounting net profit.
 
 All monetary inputs are **USD per unit**. The fixed payment fee assumes one unit per order; shared
@@ -118,6 +120,7 @@ estimates, with no automatic tax-rate lookup.
 The currency converter below the sample costs displays the **last-mile / end-to-end shipping**
 amount in a selected currency. It shows the original USD amount, converted amount, rate, source,
 and reference date. Its three fields are currency, an editable rate, and the converted total.
+The fields share equal widths and aligned control rows in both languages, and stack on narrow screens.
 The Frankfurter daily rate is filled automatically and can be edited directly; changing
 language preserves your selection and manual input. Reference rates are not live bank quotes.
 Conversion is for comparison only: it does not change either pricing plan, store currency, or

@@ -20,6 +20,7 @@ from .configuration import (
     SystemKeyringStore,
     public_profile,
 )
+from .cost_formula import CostFormulaError
 from .exchange_rates import ExchangeRateService, ExchangeRatesUnavailable
 from .pricing import PricingPolicy, PricingScheme
 from .pricing_settings import PricingSettingsRepository
@@ -119,6 +120,8 @@ class DashboardApplication:
                     costs["inbound_shipping"],
                     costs["last_mile"],
                 ).to_dict()
+            except CostFormulaError as exc:
+                comparison[scheme.value] = {"error": str(exc)}
             except ValueError:
                 comparison[scheme.value] = {
                     "error": "This scheme is unavailable for the current settings and costs."

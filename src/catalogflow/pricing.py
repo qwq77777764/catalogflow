@@ -8,6 +8,7 @@ from dataclasses import asdict, dataclass
 from enum import StrEnum
 from typing import ClassVar
 
+from .cost_formula import apply_cost_formula, normalize_cost_formula
 from .models import Product, Variant
 
 MAX_MONEY = 1_000_000.0
@@ -85,6 +86,8 @@ class PriceBreakdown:
     break_even_price: float
     rounding_adjustment: float
     price_driver: str
+    cost_formula: str | None
+    formula_cost: float | None
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -104,6 +107,7 @@ class PricingPolicy:
     scheme: PricingScheme | str = PricingScheme.MARGIN
     tax_duties_per_unit: float = 0.0
     cost_multiplier: float = 3.0
+    cost_formula: str | None = None
 
     FIELD_NAMES: ClassVar[frozenset[str]] = frozenset(
         {
@@ -117,6 +121,7 @@ class PricingPolicy:
             "scheme",
             "tax_duties_per_unit",
             "cost_multiplier",
+            "cost_formula",
         }
     )
 
@@ -127,6 +132,8 @@ class PricingPolicy:
             choices = ", ".join(item.value for item in PricingScheme)
             raise ValueError(f"scheme must be one of: {choices}") from exc
         object.__setattr__(self, "scheme", scheme)
+        if self.cost_formula is not None:
+            object.__setattr__(self, "cost_formula", normalize_cost_formula(self.cost_formula))
         for name in (
             "payment_fee_rate",
             "return_rate",
@@ -171,12 +178,13 @@ class PricingPolicy:
             raise ValueError("Pricing settings must be a JSON object")
         supplied = set(payload)
         unknown = supplied - cls.FIELD_NAMES
-        missing = cls.FIELD_NAMES - supplied
+        # Older callers and version-1 settings contain only the numeric multiplier.
+        missing = cls.FIELD_NAMES - {"cost_formula"} - supplied
         if unknown:
             raise ValueError(f"Unknown pricing fields: {', '.join(sorted(unknown))}")
         if missing:
             raise ValueError(f"Missing pricing fields: {', '.join(sorted(missing))}")
-        return cls(**{name: payload[name] for name in cls.FIELD_NAMES})
+        return cls(**{name: payload[name] for name in supplied})
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -190,6 +198,7 @@ class PricingPolicy:
             "minimum_multiplier": self.minimum_multiplier,
             "tax_duties_per_unit": self.tax_duties_per_unit,
             "cost_multiplier": self.cost_multiplier,
+            "cost_formula": self.cost_formula,
         }
 
     def price(
@@ -233,6 +242,8 @@ class PricingPolicy:
         }
         landed_cost = sum(checked.values())
         minimum_multiplier_candidate: float | None = None
+        formula_cost: float | None = None
+        cost_formula: str | None = None
         if self.scheme == PricingScheme.MARGIN:
             divisor = 1 - (
                 self.payment_fee_rate
@@ -249,8 +260,14 @@ class PricingPolicy:
             )
         else:
             # Shipping and estimated taxes/duties are deliberately added once, not multiplied.
+            cost_formula = self.cost_formula or f"*{self.cost_multiplier:g}"
+            formula_cost = (
+                apply_cost_formula(self.cost_formula, checked["product_cost"])
+                if self.cost_formula is not None
+                else checked["product_cost"] * self.cost_multiplier
+            )
             primary_candidate = (
-                checked["product_cost"] * self.cost_multiplier
+                formula_cost
                 + checked["inbound_shipping"]
                 + checked["last_mile"]
                 + checked["tax_duties_per_unit"]
@@ -303,4 +320,6 @@ class PricingPolicy:
             break_even_price=round((landed_cost + self.payment_fixed_fee) / (1 - common_rates), 6),
             rounding_adjustment=round(final_price - raw_price, 6),
             price_driver=price_driver,
+            cost_formula=cost_formula,
+            formula_cost=round(formula_cost, 6) if formula_cost is not None else None,
         )

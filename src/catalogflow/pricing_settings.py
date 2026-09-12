@@ -11,7 +11,7 @@ from pathlib import Path
 from .configuration import default_config_directory
 from .pricing import PricingPolicy
 
-PRICING_SETTINGS_VERSION = 1
+PRICING_SETTINGS_VERSION = 2
 
 
 class PricingSettingsRepository:
@@ -38,13 +38,15 @@ class PricingSettingsRepository:
             raise ValueError(f"Unknown pricing.json fields: {', '.join(sorted(unknown))}")
         if missing:
             raise ValueError(f"Missing pricing.json fields: {', '.join(sorted(missing))}")
-        if payload["version"] != PRICING_SETTINGS_VERSION:
+        if type(payload["version"]) is not int or payload["version"] not in (1, 2):
             raise ValueError(
                 f"Unsupported pricing.json version: {payload['version']!r}"
             )
         settings = payload["settings"]
         if not isinstance(settings, dict):
             raise ValueError("pricing.json settings must be a JSON object")
+        if payload["version"] == 2 and "cost_formula" not in settings:
+            raise ValueError("Missing pricing fields: cost_formula")
         return PricingPolicy.from_dict(settings)
 
     def save(self, policy: PricingPolicy) -> None:

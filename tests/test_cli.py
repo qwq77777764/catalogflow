@@ -64,9 +64,12 @@ def test_cli_loads_saved_pricing_and_injects_it_into_generator(
     assert preview["items"][0]["listing"]["prices"]["SKU-1"] == 21.95
 
 
-@pytest.mark.parametrize("scheme", ["margin", "cost_multiplier"])
+@pytest.mark.parametrize(
+    ("scheme", "formula"),
+    [("margin", None), ("cost_multiplier", None), ("cost_multiplier", "*5/2+3-1")],
+)
 def test_dashboard_saved_pricing_matches_cj_variant_cli_previews(
-    scheme, tmp_path, monkeypatch
+    scheme, formula, tmp_path, monkeypatch
 ) -> None:
     config = tmp_path / "config"
     monkeypatch.setenv("CATALOGFLOW_CONFIG_DIR", str(config))
@@ -89,6 +92,7 @@ def test_dashboard_saved_pricing_matches_cj_variant_cli_previews(
     settings = PricingPolicy(
         scheme=scheme,
         cost_multiplier=3.5,
+        cost_formula=formula,
         target_margin=0.35,
         payment_fee_rate=0.04,
         payment_fixed_fee=0.5,

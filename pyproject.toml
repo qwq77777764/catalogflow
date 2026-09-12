@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "catalogflow"
-version = "0.5.0"
+version = "0.6.0"
 description = "A safe, human-approved product catalog pipeline for WooCommerce."
 readme = "README.md"
 requires-python = ">=3.11"

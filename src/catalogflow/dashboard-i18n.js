@@ -2,6 +2,16 @@
 (function (root) {
   'use strict';
   const translations = Object.freeze({
+    '方案 B · 自定义成本公式': 'Plan B · Custom cost formula',
+    '对商品成本应用公式，再加运费、预估税费和固定支付费；百分比费用从利润中扣除。': 'Apply your formula to product cost, then add shipping, estimated duties, and the fixed payment fee. Percentage fees are deducted from profit.',
+    '商品成本公式': 'Product-cost formula',
+    '例如 *5、/5、+2、-2 或 *3+2。先乘除后加减，支持括号；只填 5 等同 *5。运费和费用另加。': 'Examples: *5, /5, +2, -2, or *3+2. Multiplication/division first; parentheses supported. A plain 5 means *5. Shipping and fees are added afterward.',
+    '商品成本 {cost} {formula} = {subtotal}；再加运费 {shipping}、税费 {tax}、固定费 {fee} → 候选价 {candidate}。最低售价与 .95 尾数随后生效。': 'Product cost {cost} {formula} = {subtotal}; add shipping {shipping}, duties {tax}, and fixed fee {fee} → candidate {candidate}. The minimum price and .95 rounding apply afterward.',
+    '按当前费用估算会亏损。理论保本价为 {price}；请调整公式或成本。': 'Estimated loss at these costs. The break-even price is {price}; adjust the formula or costs.',
+    '低于 {margin} 的目标利润率。成本公式方案不会自动补足目标利润。': 'Below the {margin} target margin. The cost-formula plan does not automatically raise prices to meet that target.',
+    '请输入有效的成本公式：使用数字、+ - * / 和括号，最多 120 个字符。': 'Enter a valid cost formula using numbers, + - * / and parentheses, up to 120 characters.',
+    '成本公式不能除以 0，请修改除数。': 'The cost formula cannot divide by zero. Change the divisor.',
+    '成本公式结果必须为 0–100,000,000 USD，且中间计算不能超出范围。': 'The cost-formula result must be between 0 and 100,000,000 USD; intermediate calculations must stay within range.',
     '每日参考汇率 · Frankfurter · {date}': 'Daily reference rate · Frankfurter · {date}',
     '汇率（可修改）': 'Exchange rate (editable)',
     '1 USD 对应的目标货币金额': 'Target currency amount per 1 USD',
@@ -123,7 +133,7 @@
     '理论保本价（未取尾数）': 'Break-even price (before rounding)',
     '预估利润 = 售价 − 落地成本 − 支付费用 − 退货与运营预留。各项按显示精度取整，可能存在尾差；不代表已实现的会计净利润。': 'Estimated profit = price − landed cost − payment fees − returns and operating reserves. Display rounding may cause small differences. This is an estimate, not realized accounting net income.',
     '查看两套公式与取整规则': 'View both formulas and rounding rules',
-    'A：max((落地成本 + 固定支付费) ÷ (1 − 支付费率 − 退货预留率 − 运营预留率 − 目标利润率), 商品成本 × 最低成本倍数, 最低售价)\nB：max(商品成本 × 商品成本倍数 + 运费 + 预估税费 + 固定支付费, 最低售价)\n落地成本 = 商品成本 + 运费 + 预估税费。\n两套方案均取不低于计算结果的最小 .95 结尾价格。\n方案 B 不使用百分比费率定价，但评估利润时仍扣除这些费用与预留。': 'A: max((landed cost + fixed payment fee) ÷ (1 − payment fee rate − returns reserve rate − operating reserve rate − target margin), product cost × minimum multiplier, minimum price)\nB: max(product cost × cost multiplier + shipping + estimated duties + fixed payment fee, minimum price)\nLanded cost = product cost + shipping + estimated duties.\nBoth plans round up to the smallest price ending in .95 that is at least the calculated price.\nPlan B excludes percentage fees from its pricing formula, but still deducts these fees and reserves when estimating profit.',
+    'A：max((落地成本 + 固定支付费) ÷ (1 − 支付费率 − 退货预留率 − 运营预留率 − 目标利润率), 商品成本 × 最低成本倍数, 最低售价)\nB：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最低售价)\n落地成本 = 商品成本 + 运费 + 预估税费。\n两套方案均取不低于计算结果的最小 .95 结尾价格。\n方案 B 不使用百分比费率定价，但评估利润时仍扣除这些费用与预留。': 'A: max((landed cost + fixed payment fee) ÷ (1 − payment fee rate − returns reserve rate − operating reserve rate − target margin), product cost × minimum multiplier, minimum price)\nB: max(product-cost formula result + shipping + estimated duties + fixed payment fee, minimum price)\nLanded cost = product cost + shipping + estimated duties.\nBoth plans round up to the smallest price ending in .95 that is at least the calculated price.\nPlan B excludes percentage fees from its pricing formula, but still deducts these fees and reserves when estimating profit.',
     '保存方案参数后，后续商品预览会使用这些设置。': 'Save plan settings to use them in future product previews.',
     '保存本机定价设置': 'Save local pricing settings',
     '撤销参数修改': 'Undo setting changes',
@@ -232,6 +242,9 @@
     'Model override (optional)': '指定模型（可选）', 'Use the CLI default when blank': '留空则使用 CLI 默认模型'
   });
   const errorSources = Object.freeze({
+    cost_formula_invalid: '请输入有效的成本公式：使用数字、+ - * / 和括号，最多 120 个字符。',
+    cost_formula_division_by_zero: '成本公式不能除以 0，请修改除数。',
+    cost_formula_result_out_of_range: '成本公式结果必须为 0–100,000,000 USD，且中间计算不能超出范围。',
     invalid_session: '本机会话已失效，请使用终端显示的完整链接重新打开。',
     invalid_origin: '浏览器来源验证失败，请使用终端显示的本机链接打开。',
     profile_not_found: '找不到这个连接档案，请重新打开本机面板。',
