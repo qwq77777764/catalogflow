@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -221,6 +222,63 @@ def test_freight_fails_closed_when_preferred_route_is_unavailable() -> None:
 
     with pytest.raises(CjApiError, match="logistics method is unavailable"):
         source.fetch("1442332573555625984")
+
+
+@pytest.mark.parametrize(
+    ("preferred", "freight_options", "expected_code", "expected_reason", "english_reason"),
+    [
+        (
+            "Synthetic Missing Route",
+            [{"logisticName": "Synthetic Available Route", "logisticPrice": 4.71}],
+            "cj_logistics_unavailable", "该线路不可用于此变体",
+            "route is unavailable for this variant",
+        ),
+        (
+            "", [], "cj_freight_unavailable", "未返回该变体的可用运费报价",
+            "No usable freight quote was returned for this variant",
+        ),
+    ],
+)
+def test_freight_failure_report_preserves_actionable_reason_without_raw_response(
+    tmp_path, preferred, freight_options, expected_code, expected_reason, english_reason,
+) -> None:
+    from catalogflow.models import ImportRequest
+    from catalogflow.pipeline import import_products
+    from catalogflow.run_history import HistoryRepository
+
+    class GeneratorThatMustNotRun:
+        def generate(self, product):
+            raise AssertionError("unavailable freight must stop before AI generation")
+
+    transport = FakeTransport(
+        synthetic_product(),
+        {
+            "variant-1": {
+                "code": 200, "result": True, "data": freight_options,
+                "message": "private-supplier-marker synthetic-api-key",
+            },
+        },
+    )
+    source = CjApiSource(
+        "synthetic-api-key", preferred_logistics=preferred, transport=transport,
+    )
+    history = HistoryRepository(tmp_path)
+    report = import_products(
+        [ImportRequest("cj", "https://cjdropshipping.com/product/detail?pid=1442332573555625984")],
+        sources={"cj": source}, generator=GeneratorThatMustNotRun(), history=history,
+    )
+
+    assert not report.ok
+    assert report.items[0].status == "failed"
+    assert report.items[0].errors == (expected_code,)
+    assert history.read(report.run_id)["items"][0]["errors"] == [expected_code]
+    report_text = Path(report.report_path).read_text(encoding="utf-8")
+    assert expected_reason in report_text
+    assert english_reason in report_text
+    assert "核对" in report_text and "重试" in report_text
+    assert "private-supplier-marker" not in report_text
+    assert "synthetic-api-key" not in report_text
+    assert "synthetic-access-token" not in report_text
 
 
 def test_freight_quote_limit_stops_before_any_quote_call() -> None:

@@ -73,5 +73,6 @@ uploaded attachments for review; the program does not delete them automatically.
 ## Scope
 
 The CLI provides report-producing imports. The dashboard provides configuration, pricing, and
-report review. A graphical import wizard, private-history migration, and the Windows EXE are
-separate follow-up work. None of these reports authorize public publishing or production actions.
+report review. The [Windows EXE](windows.md) opens that dashboard and also accepts CLI arguments.
+A graphical import wizard and private-history migration remain separate follow-up work.
+None of these reports authorize public publishing or production actions.

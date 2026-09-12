@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import tempfile
 from pathlib import Path
 
 from ..media import materialize_authorized_images
 from ..models import Listing, Product
 from ..pricing import PricingPolicy, shipping_cost_for_pricing
-from .common import build_listing_prompt, find_cli, safe_cli_environment
+from .common import build_listing_prompt, find_cli, run_external, safe_cli_environment
 
 
 class ClaudeCliListingGenerator:
@@ -67,7 +66,7 @@ class ClaudeCliListingGenerator:
                     "temporary directory: "
                     f"{names}. Use Read only to inspect those images before writing the listing."
                 )
-            process = subprocess.run(  # noqa: S603 - fixed executable and argument list
+            process = run_external(
                 command,
                 input=prompt,
                 text=True,

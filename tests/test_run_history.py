@@ -241,6 +241,14 @@ def test_exception_class_names_and_unknown_codes_cannot_be_used_as_error_payload
     assert safe_error(error) == "operation_failed"
 
 
+@pytest.mark.parametrize("code", [None, "unrecognized-private-code"])
+def test_unclassified_cj_errors_keep_generic_safe_diagnostic(code):
+    from catalogflow.providers import CjApiError
+
+    error = CjApiError("synthetic-private-response", code=code)
+    assert safe_error(error) == "CjApiError"
+
+
 def test_cj_product_query_identifier_survives_without_session_parameters():
     url = "https://cjdropshipping.com/product?pid=1442332573555625984&token=private#secret"
     assert canonical_url(url) == (

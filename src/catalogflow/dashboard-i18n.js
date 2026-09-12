@@ -2,6 +2,9 @@
 (function (root) {
   'use strict';
   const translations = Object.freeze({
+    '当前 Codex CLI 版本过旧，请在 AI 连接中选择更新的 Codex CLI。': 'This Codex CLI version is too old. Select a newer Codex CLI in the AI connection settings.',
+    '该线路不可用于此变体；核对线路后重试。': 'The selected route is unavailable for this variant; check the route and retry.',
+    'CJ 未返回该变体的可用运费报价；核对目的地与物流设置后重试。': 'No usable freight quote was returned for this variant; check the destination and logistics settings and retry.',
     '工作记录': 'Work history',
     '查看每批处理的时间、原商品链接与结果，下载可用记事本打开的 TXT 报告。预览完成不代表已创建店铺商品。': 'Review each run’s timestamps, original product links, and results. Download TXT reports for Notepad. A completed preview does not mean a store product was created.',
     '时间统一显示为 UTC。此处读取本机已有记录；运行中的批次请手动刷新。': 'All times are shown in UTC. Reports are read from this computer; refresh manually to check runs in progress.',

@@ -67,6 +67,9 @@ Omit `--draft --yes` during validation. The normal result is a local `output/pre
 - CJ products cannot opt out of freight quoting or be priced through a zero-shipping fallback.
 - A configured logistics name must exist for every variant; CatalogFlow never silently substitutes
   another route in that mode.
+- An unavailable preferred route is reported as `cj_logistics_unavailable`; no usable freight
+  quote is reported as `cj_freight_unavailable`. Both appear as actionable bilingual messages in
+  work reports. Review the country, quantity, and route before running again.
 - Without a configured logistics name, the lowest valid route returned by CJ is selected and its
   name, amount, countries, quantity, and estimated days are recorded in the local preview.
 - Freight totals are divided by quote quantity for per-unit deterministic pricing.

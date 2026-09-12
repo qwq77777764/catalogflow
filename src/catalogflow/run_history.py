@@ -26,6 +26,18 @@ _RUN_ID = re.compile(r"\d{8}T\d{12}Z-[a-f0-9]{32}")
 _MAX_FILE_BYTES = 2 * 1024 * 1024
 _MAX_ITEMS = 1000
 _ERROR_LABELS = {
+    "codex_cli_upgrade_required": (
+        "当前 Codex CLI 版本过旧，请选择更新版本 / Select a newer Codex CLI in AI connections"
+    ),
+    "cj_logistics_unavailable": (
+        "该线路不可用于此变体；核对线路后重试 / "
+        "The selected route is unavailable for this variant; check the route and retry"
+    ),
+    "cj_freight_unavailable": (
+        "CJ 未返回该变体的可用运费报价；核对目的地与物流设置后重试 / "
+        "No usable freight quote was returned for this variant; "
+        "check the destination and logistics settings and retry"
+    ),
     "configuration_failed": "连接或配置初始化失败 / Connection or settings setup failed",
     "saved_pricing_invalid": "保存的定价设置无效 / Saved pricing settings are invalid",
     "review_required": "需核对已有草稿后处理 / Reconcile the previous attempt before retrying",

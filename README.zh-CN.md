@@ -49,7 +49,13 @@ WordPress 用户名和**应用程序密码**，密码保存在系统凭据库。
 
 ## 第一步：安装 CatalogFlow
 
-需要 Python 3.11+ 和 Git。
+**Windows x64 用户：**从 [Releases](https://github.com/qwq77777764/catalogflow/releases)
+下载 Windows ZIP，解压后双击 **CatalogFlow.exe**，无需安装 Python 或 Git。
+中英文启动器会打开配置、定价和工作记录界面；点击“退出”会停止本机服务。
+AI 文案仍需本机安装并登录 Codex 或 Claude CLI。商品导入目前使用命令行参数，可视化导入
+向导仍在计划中。详见 [Windows 使用说明](docs/windows.md)。
+
+从源码安装时，需要 Python 3.11+ 和 Git。
 
 ```powershell
 git clone https://github.com/qwq77777764/catalogflow.git

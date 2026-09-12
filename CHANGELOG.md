@@ -4,6 +4,19 @@ All notable changes are documented here.
 
 ## Unreleased
 
+## 0.8.0 — 2026-09-12
+
+- Added a standalone Windows x64 EXE with a Chinese/English launcher, account-scoped single
+  instance, loopback dashboard, reopen/exit controls, and optional offline acceptance checks.
+  Existing configuration, reports, and OS-keyring credentials stay outside the executable.
+- Added an isolated PyInstaller build with explicit public-resource and binary-source checks,
+  third-party licenses, distribution checksums, and packaged-resource validation.
+- Sanitized frozen-process DLL search state before launching installed AI CLIs, hid their console
+  windows, and added an actionable diagnostic when the configured model requires a newer Codex CLI.
+- Made unavailable CJ logistics routes and missing usable freight visible in bilingual run reports.
+- Assigned unique numeric public upload names and rejected unrelated SKU-search results before
+  associating an existing store product or starting a write.
+
 ## 0.7.0 — 2026-09-12
 
 - Restored the earlier operator workflow's timestamped TXT/JSON run reports, per-item source links

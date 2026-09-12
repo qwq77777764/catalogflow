@@ -360,15 +360,14 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         return
 
 
-def run_dashboard(
+def create_dashboard_server(
     *,
     port: int = 0,
-    open_browser: bool = True,
     repository: ProfileRepository | None = None,
     secret_store: SecretStore | None = None,
     pricing_repository: PricingSettingsRepository | None = None,
-) -> None:
-    """Run until Ctrl+C or the dashboard stop button is used."""
+) -> DashboardServer:
+    """Create an authenticated loopback server without starting it or printing its token."""
 
     if not 0 <= port <= 65535:
         raise ValueError("Dashboard port must be between 0 and 65535")
@@ -381,6 +380,23 @@ def run_dashboard(
     server = DashboardServer(("127.0.0.1", port), application)
     actual_port = int(server.server_address[1])
     application.origin = f"http://127.0.0.1:{actual_port}"
+    return server
+
+
+def run_dashboard(
+    *,
+    port: int = 0,
+    open_browser: bool = True,
+    repository: ProfileRepository | None = None,
+    secret_store: SecretStore | None = None,
+    pricing_repository: PricingSettingsRepository | None = None,
+) -> None:
+    """Run until Ctrl+C or the dashboard stop button is used."""
+    server = create_dashboard_server(
+        port=port, repository=repository, secret_store=secret_store,
+        pricing_repository=pricing_repository,
+    )
+    application = server.application
     dashboard_url = f"{application.origin}/#token={application.token}"
     print(f"CatalogFlow local connection center: {application.origin}/")
     print(f"One-time dashboard URL: {dashboard_url}")

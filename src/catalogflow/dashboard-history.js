@@ -6,6 +6,9 @@
     blocked_incomplete:'上次写入结果未确认，已阻止重建', failed:'处理失败', rejected:'请求已拒绝', interrupted:'尚未完成，结果待确认'
   });
   const diagnosticLabels = Object.freeze({
+    codex_cli_upgrade_required:'当前 Codex CLI 版本过旧，请在 AI 连接中选择更新的 Codex CLI。',
+    cj_logistics_unavailable:'该线路不可用于此变体；核对线路后重试。',
+    cj_freight_unavailable:'CJ 未返回该变体的可用运费报价；核对目的地与物流设置后重试。',
     configuration_failed:'连接或运行配置未能加载，请检查所选连接档案与必填配置。',
     saved_pricing_invalid:'已保存的定价设置无效，请修正本机定价设置后重试。',
     woocommerce_invalid_response:'店铺返回的数据格式无效。',

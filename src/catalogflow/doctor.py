@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 
-from .generators.common import find_cli, safe_cli_environment
+from .generators.common import find_cli, run_external, safe_cli_environment
 
 
 def provider_status(name: str, override_variable: str) -> dict[str, str | bool]:
@@ -18,7 +18,7 @@ def provider_status(name: str, override_variable: str) -> dict[str, str | bool]:
             "message": f"not found; see docs/local-ai.md ({override_variable} can override PATH)",
         }
     try:
-        process = subprocess.run(  # noqa: S603 - resolved executable and fixed --version argument
+        process = run_external(
             [executable, "--version"],
             text=True,
             encoding="utf-8",
@@ -28,7 +28,8 @@ def provider_status(name: str, override_variable: str) -> dict[str, str | bool]:
             check=False,
             env=safe_cli_environment(),
         )
-        version = (process.stdout or process.stderr).strip().splitlines()[0]
+        lines = (process.stdout or process.stderr or "").strip().splitlines()
+        version = lines[0] if lines else "No version output"
     except (OSError, subprocess.SubprocessError) as exc:
         return {
             "provider": name,

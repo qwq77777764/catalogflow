@@ -51,7 +51,14 @@ send.
 
 ## Install CatalogFlow
 
-Python 3.11 or newer and Git are required.
+**Windows x64:** download the Windows ZIP from [Releases](https://github.com/qwq77777764/catalogflow/releases),
+extract it, and double-click **CatalogFlow.exe**. Python and Git are not required for the EXE.
+The Chinese/English launcher opens the configuration, pricing, and work-history dashboard;
+use its **Exit** button to stop the local service. AI generation still needs your own installed,
+signed-in Codex or Claude CLI. Imports currently use command-line arguments; a visual import
+wizard remains planned. See [Windows guide](docs/windows.md).
+
+For installation from source, Python 3.11 or newer and Git are required.
 
 ```powershell
 git clone https://github.com/qwq77777764/catalogflow.git

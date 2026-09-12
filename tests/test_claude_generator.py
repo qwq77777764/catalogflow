@@ -50,7 +50,7 @@ def test_claude_generator_reads_structured_output(monkeypatch) -> None:
     monkeypatch.setattr(
         "catalogflow.generators.claude_cli.find_cli", lambda *_args: "claude"
     )
-    monkeypatch.setattr("catalogflow.generators.claude_cli.subprocess.run", fake_run)
+    monkeypatch.setattr("catalogflow.generators.claude_cli.run_external", fake_run)
     monkeypatch.setenv("PRIVATE_SUPPLIER_API_KEY", "must-not-reach-child")
 
     listing = ClaudeCliListingGenerator().generate(product())
@@ -97,7 +97,7 @@ def test_claude_generator_exposes_only_read_for_images(monkeypatch) -> None:
     monkeypatch.setattr(
         "catalogflow.generators.claude_cli.find_cli", lambda *_args: "claude"
     )
-    monkeypatch.setattr("catalogflow.generators.claude_cli.subprocess.run", fake_run)
+    monkeypatch.setattr("catalogflow.generators.claude_cli.run_external", fake_run)
     monkeypatch.setattr(
         "catalogflow.generators.claude_cli.materialize_authorized_images",
         lambda _urls, directory: [Path(directory) / "0001.jpg"],
