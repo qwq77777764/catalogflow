@@ -94,9 +94,43 @@ does not change the selected plan.
 - **Margin plan (default):** product cost + inbound shipping + last-mile shipping + optional
   per-unit tax/duty estimate, then payment/return/operating reserves and target margin. Minimum
   price and the existing `.95` ending remain enforced.
-- **Cost-multiplier plan:** product cost multiplied by the chosen value (default `3x`, allowed
-  range `1x`–`100x`), then adds inbound shipping, last-mile shipping, optional tax/duty estimate,
-  and the fixed payment fee once. Shipping and tax are not multiplied.
+- **Custom cost-formula plan:** edit Plan B's formula directly in its card (default `*3`).
+  It applies to product cost, then adds inbound shipping, last-mile shipping, optional tax/duty
+  estimate, and the fixed payment fee once. Shipping and tax are outside the formula.
+
+### Write a Plan B formula
+
+The input follows the visible **Product cost** prefix. Use standard `+`, `-`, `*`, `/` symbols,
+decimal numbers, and optional parentheses. Multiplication/division take precedence over
+addition/subtraction; operations at the same precedence run left to right. A bare number such
+as `5` is shorthand for `*5`. For a product cost of 10 USD:
+
+| Input | Product-cost subtotal, before shipping and fees |
+| --- | --- |
+| `*5` | 50 USD |
+| `/5` | 2 USD |
+| `+5` | 15 USD |
+| `-5` | 5 USD |
+| `*3+2` | 32 USD |
+| `*(5+2)/3` | Approximately 23.33 USD |
+
+The card shows the subtotal, each later addition, and the candidate price. The minimum price
+and `.95` ending still apply: `/5` can produce a candidate below the floor and a higher final
+price. Estimated profit always deducts the original product cost, not the formula subtotal.
+Editing or pressing Enter recalculates; only **Save local pricing settings** persists the formula.
+Switching languages preserves it. Undo and restore defaults include the formula.
+
+Only arithmetic is accepted: no variable names, code, functions, powers, percentages, or scientific
+notation. Formulas are limited to 120 characters, 32 operators, and 12 levels of parentheses;
+each numeric constant is at most 1,000,000. Dividing by zero is rejected before saving. Formula
+results must be non-negative, with intermediate magnitudes and the subtotal at most 100,000,000
+USD. Product-specific failures stop that variant instead of substituting another formula.
+Decimal arithmetic is evaluated locally, outside AI prompts.
+
+Existing version-1 `pricing.json` files continue to load without being rewritten. They use their
+numeric `cost_multiplier` when `cost_formula` is absent or null. Explicit saves write version 2;
+a non-null `cost_formula` takes precedence for Plan B. The CLI uses each variant's own cost and
+freight with the saved formula. Older CatalogFlow versions cannot read version-2 settings.
 
 ### Read the calculation
 
@@ -114,8 +148,8 @@ payment fee, and `r` the sum of payment, return, and operating rates. Let `m` be
 | Landed cost | `C + S + T` |
 | A: margin candidate | `(C + S + T + F) / (1 - r - m)` |
 | A: price before ending | Maximum of the margin candidate, `C × minimum_multiplier`, and minimum price |
-| B: multiplier candidate | `C × cost_multiplier + S + T + F` |
-| B: price before ending | Maximum of the multiplier candidate and minimum price |
+| B: formula candidate | Apply the cost formula to `C`, then add `S + T + F` |
+| B: price before ending | Maximum of the formula candidate and minimum price |
 | Final selling price `P` | Round the price upward to the next price ending in `.95`; an existing `.95` stays unchanged |
 | Estimated unit profit | `P - (C + S + T) - F - P × r` |
 | Estimated margin | Estimated unit profit divided by `P` |
@@ -126,7 +160,7 @@ sets the price before the `.95` adjustment. Plan B uses no minimum product-cost-
 The difference between that pre-ending price and the final price is shown separately.
 
 **Plan B does not automatically ensure the target margin.** Percentage fees and reserves do not
-set its price, but they are deducted when estimating its profit. A low multiplier can yield a
+set its price, but they are deducted when estimating its profit. A low formula result can yield a
 loss even when the selling price exceeds product cost plus freight. The displayed profit is an
 estimate after the entered deductions, not accounting net profit; omitted expenses remain omitted.
 
@@ -140,6 +174,9 @@ use each variant's actual normalized quote, not the panel's example freight.
 The converter at the bottom of the sample-cost card uses the **Last-mile / end-to-end shipping
 (USD/unit)** field directly. Select CNY, EUR, GBP, JPY, CAD, AUD, HKD, SGD, CHF, NZD, or USD to see
 three fields: **target currency**, an **editable exchange rate**, and the **converted total**.
+On wider screens, equal-width columns share the label and control rows: longer English or
+Chinese labels wrap without shifting a single box downward, and a wrapped total expands all
+three controls together. On narrow screens, fields stack vertically with consistent spacing.
 The fetched rate fills the rate field automatically. The displayed equation, **1 USD = X target
 currency**, and the original USD amount make the direction explicit; changing the shipping input
 updates the total immediately.
@@ -193,7 +230,7 @@ both comparisons without importing a product or writing to a store.
 ### Save, undo, and restore defaults
 
 Product cost and both shipping fields are trial inputs and are not saved. The chosen plan, rates,
-multipliers, price floor, fixed payment fee, and per-unit tax/duty estimate are saved settings.
+cost formula, legacy multipliers, price floor, fixed payment fee, and per-unit tax/duty estimate are saved settings.
 Undo discards pending edits and returns the form to its last saved settings; restoring defaults
 loads the original margin defaults into the form. Neither action writes the settings file. To make
 restored defaults or other changes apply to later CLI runs, click **Save**.

@@ -56,9 +56,14 @@
     .fx-card { margin-top:18px; padding:18px; border:1px solid #c6dbce; border-radius:14px; background:#fff; }
     .fx-card h4 { margin:0; font-size:17px; }
     .fx-card .fx-intro { margin:4px 0 14px; }
-    .fx-controls { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.1fr); gap:12px; }
-    .fx-controls .field { min-width:0; }
-    #fx-result { display:block; min-height:48px; padding:10px 12px; border:1px solid #c6dbce;
+    .fx-controls { display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+      grid-template-rows:auto minmax(50px,auto) auto; gap:8px 12px; }
+    /* Shared rows let either language wrap labels without moving one control below its peers. */
+    .fx-controls .field { display:grid; grid-template-rows:subgrid; grid-row:span 3; min-width:0; }
+    .fx-controls label, .fx-controls .hint { margin:0; overflow-wrap:anywhere; }
+    .fx-controls :is(input,select,output) { width:100%; min-width:0; height:100%; min-height:50px;
+      padding:10px 12px; line-height:1.5; }
+    #fx-result { display:flex; align-items:center; border:1px solid #c6dbce;
       border-radius:11px; background:#eef6f1; font-size:18px; color:var(--green); font-weight:800;
       font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
     .fx-calculation { margin:12px 0 0; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
@@ -68,12 +73,15 @@
     .fx-footer a { color:var(--green); }
     .fx-caution, #fx-error { color:var(--amber); }
     #fx-result.fx-muted { color:var(--muted); }
-    @media (max-width:520px) { .fx-controls { grid-template-columns:1fr; }
+    @media (max-width:520px) { .fx-controls { grid-template-columns:1fr; grid-template-rows:none; row-gap:16px; }
+      .fx-controls .field { display:block; grid-row:auto; }
+      .fx-controls label { margin-bottom:8px; }
+      .fx-controls .hint { margin-top:8px; }
+      .fx-controls :is(input,select,output) { height:auto; }
       .pricing-panel { padding:18px; } .cost-sample { padding:12px; }
-      #fx-result { font-size:clamp(17px,5vw,24px); }
       .fx-card { padding:14px; } }
     .comparison { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
-    .plan-card { border:1px solid var(--line); border-radius:17px; padding:20px;
+    .plan-card { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:17px; padding:20px;
       background:#fff; min-width:0; }
     .plan-card.selected { border:2px solid var(--green); padding:19px; background:#f6fbf8; }
     .plan-card h3 { margin:0; font-size:18px; }
@@ -87,7 +95,21 @@
     .plan-note { min-height:42px; margin:10px 0; color:var(--muted); font-size:13px; }
     .plan-note.caution { color:var(--amber); }
     .plan-note.loss, .loss { color:var(--red); }
-    .plan-card button { width:100%; }
+    .plan-card button { width:100%; margin-top:auto; }
+    .cost-formula-editor { margin:14px 0; }
+    .cost-formula-input { display:flex; align-items:stretch; border:1px solid var(--line);
+      border-radius:11px; background:#fbfcfb; }
+    .cost-formula-input span { display:flex; align-items:center; padding:10px 12px;
+      flex-shrink:0; color:var(--muted); font-size:13px; }
+    .cost-formula-input input { min-width:0; border-radius:0 10px 10px 0;
+      font-family:ui-monospace, SFMono-Regular, Consolas, monospace; }
+    #cost-formula-evaluation { display:block; margin-top:10px; overflow-wrap:anywhere;
+      font-variant-numeric:tabular-nums; }
+    @media (max-width:520px) {
+      .cost-formula-input { flex-direction:column; }
+      .cost-formula-input span { padding-bottom:6px; }
+      .cost-formula-input input { border-radius:0 0 10px 10px; }
+    }
     .pricing-error { margin:15px 0; padding:12px 14px; border:1px solid #e6b6b2;
       background:#fff1ef; border-radius:12px; color:var(--red); }
     [hidden] { display:none !important; }
@@ -269,11 +291,17 @@
                 <button class="secondary" type="button" data-select-plan="margin" aria-pressed="true">当前选用方案 A</button>
               </article>
               <article class="plan-card" id="plan-cost_multiplier">
-                <h3>方案 B · 商品成本倍数</h3>
-                <p class="plan-description">商品成本乘倍数，再加运费、预估税费和固定支付费；百分比费用从利润中扣除。</p>
+                <h3>方案 B · 自定义成本公式</h3>
+                <p class="plan-description">对商品成本应用公式，再加运费、预估税费和固定支付费；百分比费用从利润中扣除。</p>
                 <div class="plan-price"><output id="compare-cost_multiplier-price">—</output> <small>USD / 件</small></div>
                 <div class="plan-stats"><div><span>预估每件利润</span><output id="compare-cost_multiplier-profit">—</output></div><div><span>预估利润率</span><output id="compare-cost_multiplier-margin">—</output></div></div>
                 <p id="compare-cost_multiplier-note" class="plan-note">等待试算…</p>
+                <div class="field cost-formula-editor">
+                  <label for="cost-formula">商品成本公式</label>
+                  <div class="cost-formula-input"><span>商品成本</span><input id="cost-formula" type="text" maxlength="120" required autocomplete="off" spellcheck="false" placeholder="*3+2" aria-describedby="cost-formula-hint cost-formula-evaluation"></div>
+                  <p id="cost-formula-hint" class="hint">例如 *5、/5、+2、-2 或 *3+2。先乘除后加减，支持括号；只填 5 等同 *5。运费和费用另加。</p>
+                  <output id="cost-formula-evaluation" class="hint" for="cost-formula preview-product-cost preview-inbound preview-last-mile" aria-live="polite">等待试算…</output>
+                </div>
                 <button class="secondary" type="button" data-select-plan="cost_multiplier" aria-pressed="false">使用方案 B</button>
               </article>
             </div>
@@ -282,10 +310,9 @@
             <summary>3. 调整方案参数与费用</summary>
             <div class="pricing-grid">
               <div class="pricing-group"><h3>方案与目标</h3>
-                <div class="field"><label for="pricing-scheme">用于后续预览的方案</label><select id="pricing-scheme"><option value="margin">方案 A · 完整利润率</option><option value="cost_multiplier">方案 B · 商品成本倍数</option></select></div>
+                <div class="field"><label for="pricing-scheme">用于后续预览的方案</label><select id="pricing-scheme"><option value="margin">方案 A · 完整利润率</option><option value="cost_multiplier">方案 B · 自定义成本公式</option></select></div>
                 <div class="field"><label for="target-margin">目标利润率（%） <span class="field-tag">A 定价 / B 对照</span></label><input id="target-margin" type="number" min="0" max="95" step="any" required><div class="hint">以售价为分母，已经扣除下列费用与预留。</div></div>
                 <div class="field"><label for="minimum-multiplier">最低商品成本倍数 <span class="field-tag">仅 A 定价</span></label><input id="minimum-multiplier" type="number" min="1" max="100" step="any" required></div>
-                <div class="field"><label for="cost-multiplier">商品成本倍数 <span class="field-tag">仅 B 定价</span></label><input id="cost-multiplier" type="number" min="1" max="100" step="any" required><div class="hint">默认 3×，可填 1–100×。运费与税费不乘倍数。</div></div>
               </div>
               <div class="pricing-group"><h3>费用与预留</h3>
                 <p class="hint" style="margin-top:0">百分比均按最终售价估算。方案 B 用这些值评估利润，不自动提高售价。</p>
@@ -326,7 +353,7 @@
               </div>
             </div>
             <details class="formula-details"><summary>查看两套公式与取整规则</summary><div id="pricing-formula" class="formula">A：max((落地成本 + 固定支付费) ÷ (1 − 支付费率 − 退货预留率 − 运营预留率 − 目标利润率), 商品成本 × 最低成本倍数, 最低售价)
-B：max(商品成本 × 商品成本倍数 + 运费 + 预估税费 + 固定支付费, 最低售价)
+B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最低售价)
 落地成本 = 商品成本 + 运费 + 预估税费。
 两套方案均取不低于计算结果的最小 .95 结尾价格。
 方案 B 不使用百分比费率定价，但评估利润时仍扣除这些费用与预留。</div></details>
@@ -435,13 +462,16 @@ B：max(商品成本 × 商品成本倍数 + 运费 + 预估税费 + 固定支�
       payment_fee_rate:'payment-fee-rate', payment_fixed_fee:'payment-fixed-fee',
       return_rate:'return-rate', operating_rate:'operating-rate', target_margin:'target-margin',
       minimum_price:'minimum-price', minimum_multiplier:'minimum-multiplier',
-      tax_duties_per_unit:'tax-duties', cost_multiplier:'cost-multiplier'
+      tax_duties_per_unit:'tax-duties'
     };
     const rateFields = new Set(['payment_fee_rate','return_rate','operating_rate','target_margin']);
     const costBindings = {product_cost:'preview-product-cost', inbound_shipping:'preview-inbound', last_mile:'preview-last-mile'};
     let pricingReady = false, pricingSaving = false, pricingRevision = 0, pricingRequest = null;
+    let legacyCostMultiplier = 3;
+    let formulaSyntaxIssue = null;
     function pricingSettingsFromForm() {
-      const settings = {scheme:$('pricing-scheme').value};
+      const settings = {scheme:$('pricing-scheme').value, cost_multiplier:legacyCostMultiplier,
+        cost_formula:$('cost-formula').value.trim()};
       for (const [key,id] of Object.entries(pricingBindings)) settings[key] = $(id).valueAsNumber / (rateFields.has(key) ? 100 : 1);
       return settings;
     }
@@ -449,6 +479,9 @@ B：max(商品成本 × 商品成本倍数 + 运费 + 预估税费 + 固定支�
       return Object.fromEntries(Object.entries(costBindings).map(([key,id]) => [key,$(id).valueAsNumber]));
     }
     function settingsKey(settings) {
+      let formula = settings.cost_formula ?? ('*' + settings.cost_multiplier);
+      if (/^(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)$/.test(formula.trim())) formula = '*' + formula.trim();
+      settings = {...settings, cost_formula:formula.replace(/\s/g,'')};
       return JSON.stringify(Object.keys(settings).sort().map(key => [key, typeof settings[key] === 'number' ? Number(settings[key].toPrecision(12)) : settings[key]]));
     }
     function pricingIsDirty() { return pricingReady && settingsKey(pricingSettingsFromForm()) !== settingsKey(state.pricing); }
@@ -467,6 +500,14 @@ B：max(商品成本 × 商品成本倍数 + 运费 + 预估税费 + 固定支�
     function settingsIssue() {
       const issue = fieldIssue(Object.values(pricingBindings));
       if (issue) return issue;
+      const formula = $('cost-formula'), invalid = !formula.validity.valid || !formula.value.trim()
+        || formula.value.length > 120 || !/^[0-9.+*/()\s-]+$/.test(formula.value);
+      formula.setAttribute('aria-invalid', String(invalid));
+      if (invalid) return t('请输入有效的成本公式：使用数字、+ - * / 和括号，最多 120 个字符。');
+      if (formulaSyntaxIssue?.formula === formula.value) {
+        formula.setAttribute('aria-invalid','true');
+        return errorText(new Error(formulaSyntaxIssue.code));
+      }
       const settings = pricingSettingsFromForm();
       const common = settings.payment_fee_rate + settings.return_rate + settings.operating_rate;
       if (common >= 1) return t('支付费率、退货预留率与运营预留率合计必须小于 100%，才能计算保本价。');
@@ -498,7 +539,10 @@ B：max(商品成本 × 商品成本倍数 + 运费 + 预估税费 + 固定支�
       $('breakdown-title').textContent = t('当前方案 {plan} · 每件费用明细', {plan:scheme === 'margin' ? 'A' : 'B'});
     }
     function loadPricingForm(settings) {
+      formulaSyntaxIssue = null;
       $('pricing-scheme').value = settings.scheme;
+      legacyCostMultiplier = settings.cost_multiplier;
+      $('cost-formula').value = settings.cost_formula ?? ('*' + settings.cost_multiplier);
       for (const [key,id] of Object.entries(pricingBindings)) {
         const value = settings[key] * (rateFields.has(key) ? 100 : 1);
         $(id).value = Number(value.toPrecision(15));
@@ -522,19 +566,27 @@ B：max(商品成本 × 商品成本倍数 + 运费 + 预估税费 + 固定支�
           note.textContent = t(scheme === 'margin'
             ? '方案 A 在当前参数下无法试算。请检查费率合计是否小于 100%，以及成本或目标利润率是否过高。'
             : '当前参数无法计算此方案，请检查参数范围。');
+          if (scheme === 'cost_multiplier' && result?.error?.startsWith('cost_formula_'))
+            note.textContent = errorText(new Error(result.error));
           continue;
         }
         const item = result.breakdown;
+        if (scheme === 'cost_multiplier') {
+          $('cost-formula-evaluation').textContent = t('商品成本 {cost} {formula} = {subtotal}；再加运费 {shipping}、税费 {tax}、固定费 {fee} → 候选价 {candidate}。最低售价与 .95 尾数随后生效。', {
+            cost:money(item.product_cost), formula:item.cost_formula, subtotal:money(item.formula_cost),
+            shipping:money(item.inbound_shipping+item.last_mile), tax:money(item.tax_duties_per_unit),
+            fee:money(item.payment_fixed_fee), candidate:money(item.primary_candidate)});
+        }
         $(prefix+'price').textContent = money(item.final_price);
         $(prefix+'profit').textContent = money(item.estimated_profit);
         $(prefix+'profit').classList.toggle('loss', item.estimated_profit < 0);
         $(prefix+'margin').textContent = percent(item.estimated_margin);
         if (item.estimated_profit < 0) {
           note.className='plan-note loss';
-          note.textContent=t('按当前费用估算会亏损。理论保本价为 {price}；请调整倍数或成本。', {price:money(item.break_even_price)});
+          note.textContent=t('按当前费用估算会亏损。理论保本价为 {price}；请调整公式或成本。', {price:money(item.break_even_price)});
         } else if (item.estimated_margin + 0.000001 < settings.target_margin) {
           note.className='plan-note caution';
-          note.textContent=t('低于 {margin} 的目标利润率。成本倍数方案不会自动补足目标利润。', {margin:percent(settings.target_margin)});
+          note.textContent=t('低于 {margin} 的目标利润率。成本公式方案不会自动补足目标利润。', {margin:percent(settings.target_margin)});
         } else {
           note.className='plan-note';
           note.textContent=t('当前试算达到 {margin} 的目标利润率；仍需核实商品实际成本与费用。', {margin:percent(settings.target_margin)});
@@ -573,6 +625,10 @@ B：max(商品成本 × 商品成本倍数 + 运费 + 预估税费 + 固定支�
         $('pricing-preview-status').textContent = t('已按当前输入更新 · 金额为 USD / 件');
       } catch(error) {
         if (revision !== pricingRevision || error.name === 'AbortError') return;
+        if (['cost_formula_invalid','cost_formula_division_by_zero'].includes(error.message)) {
+          formulaSyntaxIssue = {formula:$('cost-formula').value, code:error.message};
+          updatePricingControls();
+        }
         clearPricingResults(t('试算暂不可用'));
         $('pricing-error').textContent = t('试算失败，请检查参数或本机面板连接：{error}', {error:errorText(error)});
         $('pricing-error').hidden = false;
@@ -621,7 +677,12 @@ B：max(商品成本 × 商品成本倍数 + 运费 + 预估税费 + 固定支�
       const values={}, secrets={}; document.querySelectorAll('#dynamic-fields input').forEach(input=>{if(input.value.trim())(input.dataset.secret==='true'?secrets:values)[input.dataset.name]=input.value.trim();});
       const payload={id:$('profile-id').value||null,provider:$('provider').value,label:$('label').value,notes:$('notes').value,is_default:$('is-default').checked,values,secrets};
       try{await api('/api/profiles',{method:'POST',body:JSON.stringify(payload)}); toast(()=>t('连接已安全保存')); await refresh(); resetForm();}catch(error){toast(()=>errorText(error),true);} };
-    $('pricing-form').addEventListener('input', event => { if(event.target.closest('#fx-converter')) return; $('pricing-save-error').hidden=true; schedulePricingPreview(); });
+    $('pricing-form').addEventListener('input', event => {
+      if(event.target.closest('#fx-converter')) return;
+      if(event.target.id === 'cost-formula') formulaSyntaxIssue=null;
+      $('pricing-save-error').hidden=true; schedulePricingPreview();
+    });
+    $('cost-formula').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); schedulePricingPreview(); } });
     $('pricing-scheme').addEventListener('change', schedulePricingPreview);
     document.querySelectorAll('[data-select-plan]').forEach(button => button.onclick=()=> {
       $('pricing-scheme').value=button.dataset.selectPlan;

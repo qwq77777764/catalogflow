@@ -239,6 +239,40 @@ def test_dashboard_saves_and_previews_cost_multiplier_plan(tmp_path) -> None:
         server.server_close()
 
 
+def test_dashboard_formula_preview_save_and_invalid_request_preserve_settings(tmp_path):
+    server, origin = start_dashboard(tmp_path)
+    settings = PricingPolicy(scheme="cost_multiplier", cost_formula="*5/2+3-1").to_dict()
+    costs = {"product_cost": 8.5, "inbound_shipping": 1, "last_mile": 4.71}
+    try:
+        result = post_json(origin, "/api/pricing/preview", {"settings": settings, "costs": costs})
+        assert result["breakdown"]["formula_cost"] == 23.25
+        assert result["breakdown"]["primary_candidate"] == 29.36
+        assert result["breakdown"]["final_price"] == 29.95
+        assert not (tmp_path / "pricing.json").exists()
+        saved = post_json(origin, "/api/pricing", settings)["pricing"]
+        assert saved["cost_formula"] == "*5/2+3-1"
+        before = (tmp_path / "pricing.json").read_bytes()
+        for path in ("/api/pricing", "/api/pricing/preview"):
+            invalid = {**settings, "cost_formula": "/(5-5)"}
+            body = invalid if path == "/api/pricing" else {"settings": invalid, "costs": costs}
+            with pytest.raises(urllib.error.HTTPError) as caught:
+                post_json(origin, path, body)
+            assert caught.value.code == 400
+            assert json.load(caught.value)["error"] == "cost_formula_division_by_zero"
+            assert (tmp_path / "pricing.json").read_bytes() == before
+        # A valid A preview keeps working when B's result is invalid for this sample cost.
+        alternate = {**settings, "scheme": "margin", "cost_formula": "-20"}
+        result = post_json(origin, "/api/pricing/preview", {"settings": alternate, "costs": costs})
+        assert result["comparison"]["margin"]["breakdown"]["final_price"] > 0
+        assert (
+            result["comparison"]["cost_multiplier"]["error"]
+            == "cost_formula_result_out_of_range"
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
 def test_pricing_endpoint_rejects_invalid_fields_and_missing_token(tmp_path) -> None:
     server, origin = start_dashboard(tmp_path)
     invalid = {**PricingPolicy().to_dict(), "unexpected": 1}

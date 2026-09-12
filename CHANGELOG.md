@@ -4,6 +4,21 @@ All notable changes are documented here.
 
 ## Unreleased
 
+## 0.6.0 — 2026-09-12
+
+- Added an editable Plan B product-cost formula directly in its comparison card, with
+  `+`, `-`, `*`, `/`, parentheses, normal operator precedence, and visible calculation steps.
+  Shipping, duties, and fixed fees are added once after the formula; price floors and `.95`
+  rounding still apply. Both languages preserve formula edits and show specific arithmetic errors.
+- Added bounded decimal arithmetic without code evaluation, zero-divisor validation, and
+  per-product rejection of negative or excessive formula results. Version-1 numeric pricing
+  settings retain their behavior; explicit saves use version 2 with an optional cost formula.
+  Saved formulas apply to subsequent CLI variant previews and stay outside AI prompts.
+
+- Aligned the freight converter's three fields in equal-width columns with shared label and
+  control rows, so Chinese/English label wrapping and large totals do not misalign the boxes.
+  Narrow screens keep a single-column layout with consistent control spacing.
+
 ## 0.5.0 — 2026-09-12
 
 - Added Node dashboard regression checks to CI and fixed authenticated pull-request secret scans.
