@@ -6,8 +6,11 @@ All notable changes are documented here.
 
 ## 0.5.0 — 2026-09-12
 
+- Added Node dashboard regression checks to CI and fixed authenticated pull-request secret scans.
 - Added a bilingual last-mile shipping currency converter with selectable currencies, daily
   Frankfurter reference rates, visible rate dates and sources, manual rates, and retry handling.
+  Its three fields show the target currency, an automatically filled but directly editable rate,
+  and the converted total; restoring reference rates explicitly removes the manual override.
   Conversion stays separate from USD pricing and saved settings; amounts and credentials never
   reach the rate service, and manual inputs survive language changes and late responses.
 - Added a whole-dashboard Chinese (CN) / English (US) language selector with bundled translations,

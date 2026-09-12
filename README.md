@@ -117,7 +117,8 @@ estimates, with no automatic tax-rate lookup.
 
 The currency converter below the sample costs displays the **last-mile / end-to-end shipping**
 amount in a selected currency. It shows the original USD amount, converted amount, rate, source,
-and reference date. Choose a Frankfurter daily reference rate or enter a manual rate; changing
+and reference date. Its three fields are currency, an editable rate, and the converted total.
+The Frankfurter daily rate is filled automatically and can be edited directly; changing
 language preserves your selection and manual input. Reference rates are not live bank quotes.
 Conversion is for comparison only: it does not change either pricing plan, store currency, or
 saved settings. Shipping amounts and credentials never go to the rate provider. See the

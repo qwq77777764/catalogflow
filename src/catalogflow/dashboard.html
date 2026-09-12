@@ -56,14 +56,12 @@
     .fx-card { margin-top:18px; padding:18px; border:1px solid #c6dbce; border-radius:14px; background:#fff; }
     .fx-card h4 { margin:0; font-size:17px; }
     .fx-card .fx-intro { margin:4px 0 14px; }
-    .fx-controls { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .fx-controls { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.1fr); gap:12px; }
     .fx-controls .field { min-width:0; }
-    .fx-result-row { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1.3fr); align-items:center;
-      gap:12px; padding:16px; margin-top:14px; border-radius:12px; background:#eef6f1; }
-    .fx-result-row small { display:block; color:var(--muted); margin-bottom:4px; }
-    .fx-result-row output { display:block; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; font-weight:800; }
-    #fx-result { font-size:24px; color:var(--green); }
-    .fx-arrow { color:var(--green); font-size:23px; }
+    #fx-result { display:block; min-height:48px; padding:10px 12px; border:1px solid #c6dbce;
+      border-radius:11px; background:#eef6f1; font-size:18px; color:var(--green); font-weight:800;
+      font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+    .fx-calculation { margin:12px 0 0; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
     .fx-rate-line { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; margin-top:12px; }
     #fx-equation { font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
     .fx-card .fx-footer { margin-top:12px; display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; }
@@ -73,8 +71,6 @@
     @media (max-width:520px) { .fx-controls { grid-template-columns:1fr; }
       .pricing-panel { padding:18px; } .cost-sample { padding:12px; }
       #fx-result { font-size:clamp(17px,5vw,24px); }
-      .fx-result-row { grid-template-columns:minmax(0,1fr); gap:4px; }
-      .fx-arrow { line-height:1.2; transform:rotate(90deg); justify-self:start; }
       .fx-card { padding:14px; } }
     .comparison { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
     .plan-card { border:1px solid var(--line); border-radius:17px; padding:20px;
@@ -248,16 +244,14 @@
               <p class="hint fx-intro">将上方尾程 / 整段运费从 USD 换算为其他货币。</p>
               <div class="fx-controls">
                 <div class="field"><label for="fx-currency">目标货币</label><select id="fx-currency"></select></div>
-                <div class="field"><label for="fx-mode">汇率方式</label><select id="fx-mode"><option value="reference">每日参考汇率</option><option value="manual">手动汇率</option></select></div>
-                <div id="fx-manual-field" class="field" hidden><label for="fx-rate" id="fx-rate-label">每 1 USD 可兑换的目标货币</label><input id="fx-rate" type="number" min="0" max="1000000" step="any" inputmode="decimal" aria-describedby="fx-error"></div>
+                <div class="field"><label for="fx-rate" id="fx-rate-label">汇率（可修改）</label><input id="fx-rate" type="number" min="0" max="1000000" step="any" inputmode="decimal" aria-describedby="fx-rate-hint fx-error"><p class="hint" id="fx-rate-hint">1 USD 对应的目标货币金额</p></div>
+                <div id="fx-result-row" class="field" aria-live="polite" aria-atomic="true" aria-busy="true"><label for="fx-result">换算总额 / 件</label><output id="fx-result" for="preview-last-mile fx-currency fx-rate">—</output></div>
               </div>
-              <div id="fx-result-row" class="fx-result-row" aria-live="polite" aria-atomic="true" aria-busy="true">
-                <div><small>上方运费 · USD / 件</small><output id="fx-from">—</output></div><span class="fx-arrow" aria-hidden="true">→</span>
-                <div><small>换算后 / 件</small><output id="fx-result">—</output></div>
-              </div>
+              <p id="fx-calculation" class="fx-calculation">—</p>
               <div class="fx-rate-line"><b id="fx-equation">—</b><span id="fx-status" class="hint" role="status">等待参考汇率…</span></div>
               <p id="fx-error" class="hint" role="alert" hidden></p>
               <div class="fx-footer"><button id="fx-refresh" class="secondary" type="button">刷新参考汇率</button><a href="https://frankfurter.dev/v1/" target="_blank" rel="noopener noreferrer">汇率来源</a></div>
+              <p class="hint">汇率自动填入后可直接修改。修改后按你的汇率计算，不会被自动覆盖。</p>
               <p class="hint">参考汇率按工作日更新，不是银行实时成交价。换算仅供查看，不保存汇率、不修改 USD 定价；金额不会发送给汇率服务。</p>
             </section>
           </div>

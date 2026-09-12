@@ -48,6 +48,19 @@ test('manual rates stay specific to each currency and survive a delayed referenc
   model.setMode('manual'); assert.equal(model.rate,7.25);
 });
 
+test('directly editing a fetched rate selects manual use until explicitly restored', async () => {
+  const model=createModel();
+  await model.refresh(async()=>snapshot());
+  assert.equal(model.rate,7);
+  model.setManualInput('7.123456789');
+  assert.equal(model.mode,'manual'); assert.equal(model.rate,7.123456789);
+  model.setCurrency('EUR'); assert.equal(model.mode,'reference'); assert.equal(model.rate,0.9);
+  model.setCurrency('CNY'); assert.equal(model.mode,'manual'); assert.equal(model.manualInput,'7.123456789');
+  model.useReference(); assert.equal(model.mode,'reference'); assert.equal(model.rate,7);
+  model.setCurrency('EUR'); model.setCurrency('CNY'); assert.equal(model.mode,'reference');
+  model.setManualInput(''); assert.equal(model.mode,'manual'); assert.equal(model.rate,null);
+});
+
 test('older responses cannot replace newer rates, and failed refreshes discard previous rates', async () => {
   const model=createModel(),old=deferred(),fresh=deferred();
   const first=model.refresh(()=>old.promise),second=model.refresh(()=>fresh.promise);

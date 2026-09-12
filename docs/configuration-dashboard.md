@@ -139,8 +139,10 @@ use each variant's actual normalized quote, not the panel's example freight.
 
 The converter at the bottom of the sample-cost card uses the **Last-mile / end-to-end shipping
 (USD/unit)** field directly. Select CNY, EUR, GBP, JPY, CAD, AUD, HKD, SGD, CHF, NZD, or USD to see
-the original USD amount beside the converted amount. The displayed equation, **1 USD = X target
-currency**, makes the rate direction explicit; changing the shipping input updates the comparison.
+three fields: **target currency**, an **editable exchange rate**, and the **converted total**.
+The fetched rate fills the rate field automatically. The displayed equation, **1 USD = X target
+currency**, and the original USD amount make the direction explicit; changing the shipping input
+updates the total immediately.
 
 The default reference mode fetches daily rates through the local authenticated dashboard from
 [Frankfurter's v1 API](https://frankfurter.dev/v1/). The server requests the fixed endpoint
@@ -149,9 +151,12 @@ one hour. It sends no cost, shipping amount, pricing setting, credential, or use
 the service. The reference date and source stay visible: these are daily working-day reference
 rates, not live bank execution quotes. Weekends and holidays may show the last available date.
 
-Choose manual mode to enter your own positive rate in the same **1 USD = X** direction. Manual
-values are retained when switching languages, and a late reference response cannot replace them.
-A failed reference lookup clears the reference conversion and offers retry or manual input;
+Edit the populated rate directly or enter your own positive rate in the same **1 USD = X**
+direction. Editing automatically marks the rate as manual; there is no separate mode selector.
+Manual values retain the entered precision and stay specific to each target currency. They are
+retained when switching languages, and a late reference response cannot replace them. Click
+**Restore reference rate** to explicitly discard the current currency's manual override.
+A failed reference lookup leaves the rate field available for typing and offers retry;
 it does not silently present an old result as a fresh rate.
 
 Only the last-mile trial amount is converted. The converter does not change the USD input,

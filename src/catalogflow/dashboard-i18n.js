@@ -2,6 +2,15 @@
 (function (root) {
   'use strict';
   const translations = Object.freeze({
+    '每日参考汇率 · Frankfurter · {date}': 'Daily reference rate · Frankfurter · {date}',
+    '汇率（可修改）': 'Exchange rate (editable)',
+    '1 USD 对应的目标货币金额': 'Target currency amount per 1 USD',
+    '换算总额 / 件': 'Converted total / unit',
+    '{amount} × {rate} = {total}': '{amount} × {rate} = {total}',
+    '汇率自动填入后可直接修改。修改后按你的汇率计算，不会被自动覆盖。': 'The fetched rate fills this field automatically. Edit it directly to use your own rate; automatic updates will not overwrite your changes.',
+    '手动汇率 · 不会被自动覆盖': 'Manual rate · Protected from automatic updates',
+    '参考汇率暂不可用。请重试，或直接填写汇率。': 'Reference rates are unavailable. Retry or enter a rate directly.',
+    '恢复参考汇率': 'Restore reference rate',
     '运费汇率换算': 'Freight currency converter',
     '将上方尾程 / 整段运费从 USD 换算为其他货币。': 'Convert the last-mile / end-to-end shipping amount above from USD to another currency.',
     '目标货币': 'Convert to',
