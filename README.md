@@ -7,7 +7,8 @@
 **Turn authorized CJ or Alibaba product facts and images into reviewable,
 original WooCommerce listing drafts with a locally installed Codex or Claude Code CLI.**
 
-[中文说明](README.zh-CN.md) · [Connection dashboard](docs/configuration-dashboard.md) ·
+[中文说明](README.zh-CN.md) · [Visual import guide](docs/visual-import.md) ·
+[Connection dashboard](docs/configuration-dashboard.md) ·
 [Local AI setup](docs/local-ai.md) ·
 [Agent workflow](docs/agent-workflow.md) · [Browser-to-CMD workflow](docs/browser-queue-workflow.md)
 
@@ -33,8 +34,11 @@ publishing.
   all return the same validated listing shape.
 - **Pricing remains deterministic.** The AI never sees source costs and does not decide final
   prices.
+- **Review one product in the browser.** Use a CJ URL/PID or an authorized JSON file, choose a
+  generator, and review each variant's costs, freight, USD price, and editable listing copy.
 - **Safe by default.** Every run starts as a local preview. A WooCommerce write requires both
-  `--draft` and `--yes`, and the adapter can create only `draft + hidden` products.
+  review acknowledgment and the create-draft button in the wizard, or `--draft --yes` in the CLI.
+  The adapter can create only `draft + hidden` products.
 - **No bulk scraper is included.** Product facts must be operator-supplied structured data,
   an explicit authorized export, or data obtained through the operator's official API access.
 
@@ -53,10 +57,10 @@ send.
 
 **Windows x64:** download the Windows ZIP from [Releases](https://github.com/qwq77777764/catalogflow/releases),
 extract it, and double-click **CatalogFlow.exe**. Python and Git are not required for the EXE.
-The Chinese/English launcher opens the configuration, pricing, and work-history dashboard;
+The Chinese/English launcher opens the import, configuration, pricing, and work-history dashboard;
 use its **Exit** button to stop the local service. AI generation still needs your own installed,
-signed-in Codex or Claude CLI. Imports currently use command-line arguments; a visual import
-wizard remains planned. See [Windows guide](docs/windows.md).
+signed-in Codex or Claude CLI; template generation needs no AI account. Single-product imports can
+be completed in the browser, and CLI arguments remain available. See [Windows guide](docs/windows.md).
 
 For installation from source, Python 3.11 or newer and Git are required.
 
@@ -135,10 +139,32 @@ saved settings. Shipping amounts and credentials never go to the rate provider. 
 [converter details](docs/configuration-dashboard.md#convert-the-last-mile-shipping-example).
 
 Example product cost and shipping stay in the trial calculation. Restoring defaults or undoing
-edits changes the form; click **Save** to apply the selected settings to later CLI runs. Saving
+edits changes the form; click **Save** to apply the selected settings to later previews and CLI runs. Saving
 does not update existing previews or store products. Non-secret settings remain in `pricing.json`
 beside the local profile metadata, and an absent file keeps the legacy margin defaults. See the
 [pricing formulas and worked example](docs/configuration-dashboard.md#visual-pricing-panel).
+
+## Import one product visually
+
+Open the dashboard's import wizard after saving the connections and pricing you want to use:
+
+1. Choose a **CJ product URL/PID** with a saved CJ profile, or an authorized **normalized JSON
+   file** using `alibaba-manual` (UTF-8, optional BOM, at most 48 KiB). Choose Codex, Claude, or
+   template generation. A WooCommerce profile is optional for preview; select it now if you intend
+   to create a draft from this preview.
+2. Generate the preview in the background. Review the source link, image count and authorized
+   image links, each variant's cost and freight, and its calculated USD selling price. Edit the
+   listing title, HTML description as text, category, and tags; edits are validated before a write.
+3. Check the review acknowledgment and explicitly create a **hidden draft**. The server uses the
+   cached product, saved pricing snapshot, selected store, and reviewed listing; confirmation does
+   not fetch CJ again, call AI again, or recalculate prices. Results join the existing work reports
+   and duplicate protection.
+
+Only one import task runs per dashboard session. Reopen the authenticated page from the launcher
+to recover the current task while that server still runs. Unconfirmed previews are held in memory
+and cannot be resumed after restarting the application; their written reports remain on disk.
+A plain browser refresh may lose session authentication. See the [full guide](docs/visual-import.md)
+for connection requirements, review limits, and recovery.
 
 ## Connect Codex or Claude Code without an API key
 
@@ -174,7 +200,7 @@ PATH, privacy, and troubleshooting details.
 
 ## Prepare an authorized product input
 
-CatalogFlow currently consumes normalized JSON. Use operator-supplied structured data, an explicit
+For manual input, CatalogFlow consumes normalized JSON. Use operator-supplied structured data, an explicit
 authorized export, or an official supplier API. The browser selector queues an identifier/URL; it
 does not manufacture missing product facts. Never put cookies or credentials in this file.
 
@@ -203,6 +229,7 @@ python -m catalogflow product.json --source alibaba-manual --generator claude
 
 The result is written to `output/preview.json`, which is ignored by Git. Each CLI import also
 archives a separate timestamped work report (TXT and JSON) in your user configuration directory.
+The visual wizard writes to the same archive; its preview and draft result remain traceable there.
 The dashboard's **Work history** section lists runs and downloads a readable TXT report with
 source links, per-item outcomes, timestamps, and any store draft IDs. Repeated previews remain
 allowed; completed drafts are protected by a store-scoped history registry. Interrupted or
@@ -277,7 +304,7 @@ they mixed brittle DOM selectors, local automation, production configuration, an
 | Anthropic API key | No | Use an already signed-in Claude Code CLI. Never paste a key into this repo. |
 | CJ API | No for manual input; yes for the CJ preview adapter | Apply through your own legitimate CJ account and follow CJ's current terms, points, and quotas. |
 | Alibaba/1688 API | No for manual input; useful for structured catalog data | Apply through your own legitimate Alibaba/1688 account or approved provider and follow its terms. |
-| WooCommerce REST API | No for previews; yes for hidden-draft writes | Create least-privilege credentials in your own store and keep them in local environment variables. |
+| WooCommerce REST API | No for previews; yes for hidden-draft writes | Create least-privilege credentials in your own store; save them in the connection profile's OS keyring, or supply local environment variables for the CLI. |
 
 CatalogFlow does not distribute, broker, share, or help bypass access to supplier APIs. API
 approval, account eligibility, data rights, quotas, and fees belong to each user and provider.
@@ -292,8 +319,8 @@ operating-system keyring. WooCommerce consumer keys alone cannot authenticate th
 endpoint. Without images, only the normal WooCommerce credentials are needed. Products and
 variations remain drafts; uploaded media files can be directly accessible on the store's server.
 
-Set the three `WOOCOMMERCE_*` variables shown in `.env.example` in your local environment,
-review the preview, and then explicitly acknowledge the write:
+Use the visual review flow above, or set the three `WOOCOMMERCE_*` variables shown in `.env.example`
+in your local environment and explicitly acknowledge a CLI write:
 
 ```powershell
 python -m catalogflow product.json --source alibaba-manual --generator codex --draft --yes

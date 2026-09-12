@@ -66,6 +66,11 @@ def post_json(origin, path, payload, *, token=None, include_token=True):
             "text/javascript; charset=utf-8",
             b"window.CatalogFlowHistory = {};",
         ),
+        (
+            "/assets/dashboard-import.js",
+            "text/javascript; charset=utf-8",
+            b"window.CatalogFlowImport = {};",
+        ),
     ],
 )
 def test_dashboard_static_assets_are_available_with_security_headers(

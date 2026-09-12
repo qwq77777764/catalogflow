@@ -15,8 +15,9 @@ SPEC.loader.exec_module(build)
 
 def test_release_assets_exist_and_only_include_expected_public_resources():
     assets = build.public_assets(ROOT)
-    assert len(assets) == 6
+    assert len(assets) == 7
     assert any(Path(source).name == "dashboard-history.js" for source, _ in assets)
+    assert any(Path(source).name == "dashboard-import.js" for source, _ in assets)
     assert any(destination == "catalogflow/schemas" for _, destination in assets)
     assert all(Path(source).is_relative_to(ROOT / "src" / "catalogflow") for source, _ in assets)
     assert all(Path(source).suffix in {".html", ".js", ".json"} for source, _ in assets)

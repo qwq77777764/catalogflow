@@ -2,6 +2,7 @@
 
 CatalogFlow includes a loopback-only connection center so users can configure supported services
 without editing Python files or placing secrets in a Git checkout.
+The same dashboard includes pricing, the single-product import wizard, and work history.
 
 ## Start the dashboard
 
@@ -19,6 +20,7 @@ python -m catalogflow configure
 
 CatalogFlow chooses an available local port, opens the default browser, and prints a one-time URL.
 The server binds only to `127.0.0.1`. Close it with the page's stop button or `Ctrl+C`.
+The stop button refuses to shut down an active import; wait for the preview or draft result first.
 
 Useful options:
 
@@ -30,6 +32,11 @@ python -m catalogflow configure --port 8765
 For a fresh page load or reopening the panel, use the original session URL printed by the CLI while
 that server is running. A bare local address omits session authentication; restarting the command
 creates a new session URL.
+With the Windows EXE, use the launcher's **Open interface** button to reopen the authenticated page.
+While that server is still running, the import wizard restores its current background task or
+unconfirmed preview. The page removes the token from its address after loading; ordinary F5 on
+that cleaned address is not an authenticated recovery path. Restarting the server loses its
+in-memory previews but keeps archived reports.
 
 ## Choose the interface language
 
@@ -39,26 +46,48 @@ preferred. Browser `localStorage` stores only the selected language code for tha
 port; a new random port does not share the saved preference.
 
 Switching updates labels, provider fields, formulas, validation messages, dynamic status messages,
-and USD/percentage display formats using dictionaries bundled with CatalogFlow. No AI call or
+import steps, review fields, and USD/percentage display formats using dictionaries bundled with
+CatalogFlow. No AI call or
 external translation service is required. Language selection leaves core pricing in USD; the
 separate shipping converter below provides an optional currency comparison.
 
 Entered costs, rates, connection names, notes, drafts, and secret fields are preserved. User-written
 names and notes remain in their original language. Switching languages does not save pricing or
-change which settings apply to later CLI runs.
+change which settings apply to later previews or CLI runs.
 
 Developers can run the bundled dashboard checks with `node --test tests/dashboard-*.test.cjs`
 (Node.js 22, no npm dependencies). CI runs them alongside the Python tests.
 
 ## Work history
 
-The **Work history** section reads the same local report archive written by CLI imports. Refresh
+The **Work history** section reads the same local report archive written by CLI and visual imports. Refresh
 the list after a run, open its details, or download its UTF-8 TXT report. Report requests use the
 dashboard's session token; the token is never included in download URLs. Chinese and English
 labels distinguish previews, completed hidden drafts, skipped duplicates, and uncertain writes.
 
 This viewer does not start an import, publish a product, or import an old private registry. An
 empty history means no reports exist in this configuration directory. See [Work reports](work-reports.md).
+
+## Visual product import
+
+The import wizard accepts one CJ URL/PID through a saved CJ profile, or one operator-supplied
+normalized JSON file (`alibaba-manual`, UTF-8 with optional BOM, maximum 48 KiB). Select a generator
+and optionally a saved WooCommerce profile, then generate a preview using saved pricing settings.
+The template generator needs no AI account; Codex and Claude use their locally installed CLIs and
+can send authorized product facts and images to their providers.
+
+Review each variant's cost, freight, and USD selling price along with the source and image links.
+Only the listing title, description HTML as text, category, and tags are editable here. After
+review, the acknowledgment checkbox and create-draft button permit only `draft + hidden` writes.
+A preview made without a store cannot later be redirected to a store: start a new preview with
+the intended WooCommerce profile selected. Confirmation retains the cached product, saved pricing
+snapshot, and store selection; it never refetches CJ or reruns AI or pricing. To apply new saved
+pricing, supplier settings, or a different store, generate another preview.
+
+The dashboard processes one import task at a time and records results through the existing report
+and duplicate-protection mechanisms. Alibaba/1688 web URLs, batch uploads, and SSH store writes are
+not supported by this wizard. See [Visual import guide](visual-import.md) for the complete flow and
+the difference between recoverable session state and persistent work reports.
 
 ## What a connection profile contains
 
@@ -243,7 +272,7 @@ Product cost and both shipping fields are trial inputs and are not saved. The ch
 cost formula, legacy multipliers, price floor, fixed payment fee, and per-unit tax/duty estimate are saved settings.
 Undo discards pending edits and returns the form to its last saved settings; restoring defaults
 loads the original margin defaults into the form. Neither action writes the settings file. To make
-restored defaults or other changes apply to later CLI runs, click **Save**.
+restored defaults or other changes apply to later previews or CLI runs, click **Save**.
 
 An invalid trial input clears the old comparison instead of leaving a stale price on screen;
 otherwise-valid policy settings can still be saved without a valid trial cost. Invalid selected-plan
@@ -253,9 +282,9 @@ the current result. Refreshing connection profiles preserves pending pricing edi
 save leaves those edits available for retry.
 
 Saving validates the settings and atomically writes non-secret `pricing.json` next to the profile
-metadata. Only subsequent CLI runs load those saved settings; existing previews and store products
+metadata. Only subsequent previews and CLI runs load those saved settings; existing previews and store products
 are unchanged. API keys, tokens, cookies, and SSH material are never written there. If the settings
-file is absent, the runtime uses the legacy margin defaults. Invalid saved settings stop the CLI
+file is absent, the runtime uses the legacy margin defaults. Invalid saved settings stop the import
 before listing generation rather than silently selecting another price.
 
 Tax/duty values are operator estimates only; CatalogFlow does not query customs, determine a tax

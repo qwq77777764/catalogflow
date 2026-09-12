@@ -28,15 +28,19 @@ class CodexCliListingGenerator:
         self,
         *,
         model: str | None = None,
+        command: str | None = None,
         timeout_seconds: int = 300,
         policy: PricingPolicy | None = None,
     ) -> None:
-        self.model = model or os.environ.get("CATALOGFLOW_CODEX_MODEL") or None
+        self.model = ((os.environ.get("CATALOGFLOW_CODEX_MODEL") if model is None else model)
+                      or None)
+        self.command = command
         self.timeout_seconds = timeout_seconds
         self.policy = policy or PricingPolicy()
 
     def generate(self, product: Product) -> Listing:
-        executable = find_cli("codex", "CATALOGFLOW_CODEX_COMMAND")
+        executable = (find_cli("codex", "CATALOGFLOW_CODEX_COMMAND") if self.command is None
+                      else find_cli("codex", "CATALOGFLOW_CODEX_COMMAND", command=self.command))
         if not executable:
             raise RuntimeError(
                 "Codex CLI was not found. Run 'catalogflow --doctor' and see docs/local-ai.md"

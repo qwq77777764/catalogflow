@@ -1,6 +1,7 @@
 # Work reports and draft history
 
-Each CLI import creates a separate run archive under the CatalogFlow configuration directory:
+CLI imports and the visual import wizard use the same run archive under the CatalogFlow
+configuration directory:
 
 - Windows: `%APPDATA%\CatalogFlow\reports\`.
 - Other systems: the normal CatalogFlow user configuration directory, followed by `reports/`.
@@ -10,6 +11,11 @@ The run ID combines a UTC timestamp with a random ID. Completed runs have UTF-8 
 structured `report.json` files. Creating another run never overwrites an earlier run. The existing
 `--output` JSON preview remains available and can still overwrite that explicitly selected path.
 The report archive is independent of that compatibility output.
+
+The visual wizard records its preview and the result of an explicitly confirmed draft through
+this reporting system. It reuses the reviewed product and price snapshot for confirmation rather
+than fetching the supplier, invoking AI, or recalculating prices again. These reports are evidence
+of what happened; they are not a resumable saved import session.
 
 ## What is recorded
 
@@ -72,7 +78,11 @@ uploaded attachments for review; the program does not delete them automatically.
 
 ## Scope
 
-The CLI provides report-producing imports. The dashboard provides configuration, pricing, and
-report review. The [Windows EXE](windows.md) opens that dashboard and also accepts CLI arguments.
-A graphical import wizard and private-history migration remain separate follow-up work.
+The CLI and [single-product visual wizard](visual-import.md) provide report-producing imports.
+The dashboard also provides configuration, pricing, and report review. The [Windows EXE](windows.md)
+opens that dashboard and also accepts CLI arguments. Closing a browser page does not stop a running
+import. Reopening the authenticated page can recover the current task while the same server runs;
+restarting the application discards unconfirmed in-memory previews and keeps the written reports.
+The wizard does not resume a preview from a historical TXT or JSON report. Batch imports in the
+wizard, uncertain-write reconciliation controls, and private-history migration remain follow-up work.
 None of these reports authorize public publishing or production actions.

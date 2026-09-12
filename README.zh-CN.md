@@ -3,7 +3,8 @@
 **把你有权使用的 CJ 或 Alibaba/1688 商品资料和图片，交给本机已登录的 Codex 或
 Claude Code，生成可审核的原创 WooCommerce 商品草稿。**
 
-[English README](README.md) · [可视化连接面板](docs/configuration-dashboard.md) ·
+[English README](README.md) · [可视化导入指南](docs/visual-import.md#中文操作说明) ·
+[可视化连接面板](docs/configuration-dashboard.md) ·
 [本地 AI 接入](docs/local-ai.md) ·
 [Agent 工作流](docs/agent-workflow.md) · [浏览器到 CMD 队列](docs/browser-queue-workflow.md)
 
@@ -26,8 +27,10 @@ Claude Code，生成可审核的原创 WooCommerce 商品草稿。**
 - **可以看授权商品图后写 listing。** 最多 5 张公网 HTTPS 图片只下载到临时目录；
   程序会拒绝 localhost、内网地址、带账号密码的 URL 和过大的文件。
 - **AI 不决定售价。** 成本不发送给模型，售价由本地固定公式计算。
-- **默认不写商店。** 普通运行生成本地预览和独立归档的工作报告；同时提供 `--draft --yes`
-  才会创建 `draft + hidden` 商品。
+- **浏览器内审核单个商品。** 输入 CJ 链接/PID 或授权 JSON 文件，选择生成方式，查看每个变体的
+  成本、运费、USD 售价并编辑文案。
+- **默认不写商店。** 普通运行生成本地预览和独立归档的工作报告；向导中勾选审核确认并点击创建草稿，
+  或 CLI 同时提供 `--draft --yes`，才会创建 `draft + hidden` 商品。
 - **供应商可替换。** CJ、Alibaba 手工数据、Codex、Claude 和离线演示都使用同一套结构。
 
 “本地 Codex/Claude”表示 CatalogFlow 调用你电脑上的 `codex` 或 `claude` 命令，登录和
@@ -36,7 +39,7 @@ Claude Code，生成可审核的原创 WooCommerce 商品草稿。**
 
 ## 工作记录与历史防重复
 
-每次 CLI 导入都会另外保存带时间戳的 **TXT 记事本报告和 JSON 记录**，包含批次及逐商品时间、
+CLI 与可视化向导共用带时间戳的 **TXT 记事本报告和 JSON 记录**，包含批次及逐商品时间、
 原商品链接、来源编号、标题、成功/失败/跳过原因，以及已创建草稿的商品 ID 和检查链接。
 在可视化面板的**工作记录**中可以查看历史和下载 TXT。报告保存在用户配置目录，后续运行不会
 覆盖先前的报告；`output/preview.json` 仍保留为兼容输出。
@@ -51,9 +54,9 @@ WordPress 用户名和**应用程序密码**，密码保存在系统凭据库。
 
 **Windows x64 用户：**从 [Releases](https://github.com/qwq77777764/catalogflow/releases)
 下载 Windows ZIP，解压后双击 **CatalogFlow.exe**，无需安装 Python 或 Git。
-中英文启动器会打开配置、定价和工作记录界面；点击“退出”会停止本机服务。
-AI 文案仍需本机安装并登录 Codex 或 Claude CLI。商品导入目前使用命令行参数，可视化导入
-向导仍在计划中。详见 [Windows 使用说明](docs/windows.md)。
+中英文启动器会打开导入、配置、定价和工作记录界面；点击“退出”会停止本机服务。
+AI 文案仍需本机安装并登录 Codex 或 Claude CLI；模板生成不需要 AI 账号。单商品导入可直接
+在浏览器中完成，命令行参数继续可用。详见 [Windows 使用说明](docs/windows.md)。
 
 从源码安装时，需要 Python 3.11+ 和 Git。
 
@@ -124,9 +127,25 @@ Frankfurter 每日参考汇率自动填入第二栏，可直接修改或自己�
 [汇率换算说明](docs/configuration-dashboard.md#convert-the-last-mile-shipping-example)。
 
 商品成本与运费只用于试算，不会保存。恢复默认或撤销修改只改变表单，必须点击**保存**才会用于
-后续 CLI 运行，不会改动已有预览或商店商品。设置保存在与连接档案并列的非秘密 `pricing.json`，
+后续预览与 CLI 运行，不会改动已有预览或商店商品。设置保存在与连接档案并列的非秘密 `pricing.json`，
 没有该文件时继续使用旧的默认利润率方案。完整公式和试算例子见
 [面板配置文档](docs/configuration-dashboard.md#visual-pricing-panel)。
+
+## 在浏览器中导入单个商品
+
+先保存需要使用的连接档案和定价设置，再打开导入向导：
+
+1. 选择 **CJ 商品链接/PID**及已保存的 CJ 连接，或者上传你有权使用的**规范化 JSON 文件**
+   （来源为 `alibaba-manual`，UTF-8，可带 BOM，最多 48 KiB）。选择 Codex、Claude 或模板生成。
+   只做预览可以不选店铺；如需在这次预览后创建草稿，须在此时选定 WooCommerce 连接。
+2. 后台生成预览后，核对原链接、图片数量与授权图片链接、每个变体的成本、运费及 USD 售价。
+   可修改标题、以文本显示的 HTML 描述、分类和标签；写入前会重新校验文案。
+3. 勾选已完成审核，再点击创建**隐藏草稿**。确认使用服务器缓存的商品、已保存定价快照、目标店铺
+   与审核后的文案，不会重新请求 CJ、调用 AI 或重新计算价格。结果继续进入原有报告和防重复登记。
+
+一个面板会话同时只运行一个导入任务。服务仍在运行时，可通过启动器“打开界面”重新进入认证页面，
+恢复当前任务；未确认预览只保存在内存中，重启程序后不能继续确认，已写入的报告仍在磁盘上。
+普通 F5 刷新可能丢失本页会话认证。连接要求、审核范围和恢复方式见[完整指南](docs/visual-import.md#中文操作说明)。
 
 ## 第二步：连接本机 Codex 或 Claude
 
@@ -255,7 +274,7 @@ CJ 预览请把一个 CJ URL/PID 配合 `--supplier-profile` 使用；Alibaba �
 - **Alibaba/1688 API：手工输入时不需要。** 自动读取结构化数据时，必须由使用者通过
   自己的 Alibaba/1688 账号或获批准的服务合法申请。
 - **WooCommerce REST API：预览不需要。** 只有创建隐藏草稿时才需要自己商店的最小权限
-  凭据，并且只能保存在本机环境变量中。
+  凭据；连接档案中的密钥保存在系统凭据库，CLI 也可使用本机环境变量。
 
 本项目不提供、转卖、共享或绕过任何供应商 API 权限。
 

@@ -42,7 +42,55 @@
     .section-nav { display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
     .section-nav a { color:var(--green); background:#fff; border:1px solid #c6dbce;
       padding:9px 15px; border-radius:999px; font-weight:750; text-decoration:none; }
-    #pricing-title, #connections, #history-title { scroll-margin-top:80px; }
+    #pricing-title, #connections, #history-title, #import-title { scroll-margin-top:80px; }
+    .import-panel { margin-bottom:22px; overflow-wrap:anywhere; }
+    .import-intro { color:var(--muted); max-width:760px; margin:8px 0 18px; }
+    .import-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; padding:0; list-style:none; }
+    .import-steps li { border-radius:10px; padding:10px 12px; background:var(--green2); color:var(--green); font-weight:750; }
+    .import-section { border-top:1px solid var(--line); margin-top:20px; padding-top:18px; min-width:0; }
+    .import-section h3 { margin:0 0 16px; }
+    #import-inputs { border:0; padding:0; margin:0; min-width:0; }
+    .import-controls { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); grid-auto-rows:auto minmax(50px,auto); gap:8px 16px; }
+    .import-controls .field { display:grid; grid-template-rows:subgrid; grid-row:span 2; margin:0 0 10px; min-width:0; }
+    .import-controls label { margin:0; overflow-wrap:anywhere; }
+    .import-controls :is(input,select) { min-width:0; width:100%; height:50px; min-height:50px; }
+    .import-controls input[type="file"] { font-size:13px; }
+    .import-actions { display:flex; align-items:center; flex-wrap:wrap; gap:12px 18px; margin-top:16px; }
+    .import-actions a, .import-image-links a { color:var(--green); }
+    .import-status { margin:18px 0 0; font-weight:750; color:var(--green); }
+    .import-edit-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:20px; }
+    .import-edit-grid .field { min-width:0; margin:0; }
+    .import-full { grid-column:1/-1; }
+    #import-edit-description_html { min-height:180px; font-family:ui-monospace,Consolas,monospace; font-size:13px; }
+    .import-image-links { padding-left:22px; font-size:13px; }
+    .import-image-links li { padding:4px 0; }
+    .import-section details { margin-top:16px; }
+    .import-section summary { cursor:pointer; color:var(--green); font-weight:750; }
+    .import-section details dl { margin-top:12px; }
+    .import-table-wrap { width:100%; min-width:0; }
+    .import-variants { width:100%; table-layout:fixed; border-collapse:collapse; font-size:13px; }
+    .import-variants th, .import-variants td { padding:10px 8px; border-bottom:1px solid var(--line); text-align:right; font-variant-numeric:tabular-nums; }
+    .import-variants th:first-child, .import-variants td:first-child { width:43%; text-align:left; white-space:pre-wrap; }
+    .import-draft { margin-top:22px; padding:18px; border-radius:14px; background:#f0f6f2; }
+    .import-draft .check { align-items:flex-start; }
+    .import-draft input[type="checkbox"] { flex-shrink:0; margin-top:5px; }
+    .import-result { margin-top:20px; border:1px solid #b9dfcc; border-radius:14px; padding:18px; background:var(--green2); }
+    .import-result h3 { margin-top:0; }
+    @media (max-width:800px) { .import-controls { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:520px) {
+      .import-panel { padding:18px; }
+      .import-steps, .import-controls, .import-edit-grid { grid-template-columns:1fr; }
+      .import-controls { grid-auto-rows:auto; }
+      .import-controls .field { display:block; grid-row:auto; }
+      .import-controls label { margin-bottom:8px; }
+      .import-variants thead { display:none; }
+      .import-variants, .import-variants tbody, .import-variants tr, .import-variants td { display:block; width:100%; }
+      .import-variants tr { margin-bottom:12px; border:1px solid var(--line); border-radius:10px; padding:8px; }
+      .import-variants td, .import-variants td:first-child { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); width:100%; gap:8px; text-align:right; }
+      .import-variants td::before { content:attr(data-label); color:var(--muted); text-align:left; white-space:normal; }
+      .import-variants td:last-child { border:0; }
+      .import-actions button, #import-draft { width:100%; }
+    }
     .history-panel { margin-top:22px; }
     .history-panel .panel-head { align-items:flex-start; flex-wrap:wrap; }
     .history-intro { margin:8px 0 0; max-width:750px; color:var(--muted); }
@@ -250,7 +298,8 @@
       <div class="flow-step"><b>04 · REVIEW</b><span>审核后存草稿</span></div>
       <p class="flow-note">不是批量爬虫：不遍历站点、不绕过登录或限流。正式供应商适配器只使用操作者自行申请并获准使用的官方 API；本地 AI 需要已有登录与可用额度。</p>
     </div>
-    <nav class="section-nav" aria-label="面板导航"><a href="#connections">连接档案</a><a href="#pricing-title">定价工作台 ↓</a><a href="#history-title">工作记录</a></nav>
+    <nav class="section-nav" aria-label="面板导航"><a href="#import-title">商品搬运</a><a href="#connections">连接档案</a><a href="#pricing-title">定价工作台 ↓</a><a href="#history-title">工作记录</a></nav>
+    <section id="product-import" class="panel import-panel" aria-labelledby="import-title"></section>
     <main class="grid" id="connections">
       <section class="panel">
         <div class="panel-head"><h2 id="form-title">新增连接</h2><div class="step">1</div></div>
@@ -412,6 +461,7 @@ B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最�
   <script src="/assets/dashboard-i18n.js"></script>
   <script src="/assets/dashboard-fx.js"></script>
   <script src="/assets/dashboard-history.js"></script>
+  <script src="/assets/dashboard-import.js"></script>
   <script>
     const token = new URLSearchParams(location.hash.slice(1)).get('token') || '';
     history.replaceState(null, '', location.pathname);
@@ -420,6 +470,7 @@ B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最�
     let pricingTimer = 0;
     let freightConverter = null;
     let historyViewer = null;
+    let importWizard = null;
     const $ = id => document.getElementById(id);
     const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
     let languageStorage;
@@ -697,6 +748,7 @@ B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最�
       state.profiles = incoming.profiles;
       $('provider').innerHTML=providerOptions();
       renderProviderFields(); renderProfiles();
+      importWizard?.refreshProfiles();
       if (!pricingReady) {
         state.pricing = incoming.pricing;
         state.pricing_defaults = incoming.pricing_defaults;
@@ -751,7 +803,7 @@ B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最�
         renderSaveError();
       } finally { pricingSaving=false; updatePricingControls(); }
     };
-    window.addEventListener('beforeunload', event=> { if (pricingIsDirty() || pricingSaving) { event.preventDefault(); event.returnValue=''; } });
+    window.addEventListener('beforeunload', event=> { if (pricingIsDirty() || pricingSaving || importWizard?.havePendingChanges() || importWizard?.processing()) { event.preventDefault(); event.returnValue=''; } });
     $('provider').onchange=()=>renderProviderFields(); $('cancel-edit').onclick=resetForm;
     $('ui-language').onchange=()=> {
       i18n.setLocale($('ui-language').value);
@@ -761,10 +813,16 @@ B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最�
       schedulePricingPreview(); renderSaveError();
       freightConverter?.localize();
       historyViewer?.localize();
+      importWizard?.localize();
     };
     $('stop').onclick=async()=>{try{await api('/api/shutdown',{method:'POST',body:'{}'}); document.body.innerHTML=`<div class="shell"><section class="panel"><h1>${esc(t('面板已停止'))}</h1><p>${esc(t('可以关闭这个页面。'))}</p></section></div>`;}catch(error){toast(()=>errorText(error),true);}};
     translateStaticCopy();
     historyViewer=CatalogFlowHistory.mount({container:$('work-history'),i18n,api});
+    importWizard=CatalogFlowImport.mount({container:$('product-import'),i18n,api,getProfiles:()=>state.profiles,
+      pricingIsDirty:()=>!pricingReady || pricingSaving || pricingIsDirty(),onHistoryRefresh:async runId=>{
+        await historyViewer.refresh();
+        if (runId) $('history-toggle-'+runId)?.click();
+      }});
     refresh().catch(error=>toast(()=>t('无法打开配置：{error}', {error:errorText(error)}),true));
   </script>
 </body>
