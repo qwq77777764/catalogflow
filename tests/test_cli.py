@@ -7,6 +7,7 @@ from catalogflow.configuration import MemorySecretStore, ProfileRepository
 from catalogflow.dashboard import DashboardApplication
 from catalogflow.pricing import PricingPolicy
 from catalogflow.pricing_settings import PricingSettingsRepository
+from catalogflow.run_history import HistoryRepository
 
 
 def test_supplier_profile_is_available_for_one_cj_reference() -> None:
@@ -180,15 +181,62 @@ def test_cli_invalid_saved_pricing_stops_before_generation_without_preview(
 
     monkeypatch.setattr("catalogflow.cli.DeterministicListingGenerator", generation_forbidden)
     output = tmp_path / "preview.json"
-    with pytest.raises(SystemExit, match="Saved pricing settings are invalid"):
-        main(
-            [
-                str(tmp_path / "not-read.json"),
-                "--source",
-                "alibaba-manual",
-                "--output",
-                str(output),
-            ]
-        )
+    result = main(
+        [str(tmp_path / "not-read.json"), "--source", "alibaba-manual", "--output", str(output)]
+    )
 
     assert not output.exists()
+    assert result == 1
+    history = HistoryRepository()
+    run_id = history.recent()[0]["run_id"]
+    assert "Saved pricing settings are invalid" in history.report_text(run_id)
+
+
+def test_cli_archives_profile_setup_failure_without_echoing_exception(
+    tmp_path, monkeypatch, capsys,
+):
+    monkeypatch.setenv("CATALOGFLOW_CONFIG_DIR", str(tmp_path / "config"))
+
+    def fail_profile(*args):
+        raise RuntimeError("private-synthetic-credential")
+
+    monkeypatch.setattr("catalogflow.cli._load_profile", fail_profile)
+    assert main(["synthetic.json", "--source", "cj", "--supplier-profile", "missing"]) == 1
+    message = json.loads(capsys.readouterr().out)
+    assert message["error"] == "configuration_failed"
+    history = HistoryRepository()
+    assert "private-synthetic-credential" not in history.report_text(message["run_id"])
+
+
+def test_cli_failed_compatibility_output_keeps_archived_preview(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("CATALOGFLOW_CONFIG_DIR", str(tmp_path / "config"))
+    source = tmp_path / "product.json"
+    source.write_text(json.dumps({
+        "source_id": "test-1", "title": "Basket",
+        "variants": [{"sku": "SKU-1", "cost": 2}],
+    }), encoding="utf-8")
+
+    def fail_output(*args):
+        raise PermissionError("private path details")
+
+    monkeypatch.setattr("catalogflow.cli.write_preview", fail_output)
+    assert main([str(source), "--source", "alibaba-manual"]) == 1
+    message = json.loads(capsys.readouterr().out)
+    assert message["error"] == "preview_output_failed"
+    document = HistoryRepository().read(message["run_id"])
+    assert document["counts"] == {"previewed": 1}
+    assert document["items"][0]["artifact_path"]
+
+
+def test_cli_unwritable_history_fails_without_raw_traceback(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("CATALOGFLOW_CONFIG_DIR", str(tmp_path / "config"))
+
+    def unavailable(*args):
+        raise PermissionError("private-path-and-credential-marker")
+
+    monkeypatch.setattr(HistoryRepository, "create_run", unavailable)
+    assert main(["unused.json", "--source", "alibaba-manual"]) == 1
+    output = capsys.readouterr()
+    assert json.loads(output.out)["error"] == "reports_unavailable"
+    assert output.err == ""
+    assert "private-path-and-credential-marker" not in output.out

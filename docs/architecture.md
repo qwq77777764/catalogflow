@@ -14,6 +14,13 @@ and the rule that store writes occur only in explicit draft mode.
 
 Pricing and validation are pure internal policy, not pass-through adapters.
 
+`HistoryRepository` owns per-run reports and store-scoped durable draft reservations. The CLI
+always enables it; library callers may explicitly supply it to `import_products`. The repository
+records item starts and outcomes before finishing immutable TXT/JSON snapshots. Preview runs do
+not reserve store writes. An unfinished reservation blocks another creation instead of guessing
+whether the remote request succeeded. The dashboard exposes bounded, authenticated read-only
+report routes, not arbitrary filesystem access.
+
 ## Safety invariants
 
 1. The default mode is `dry-run`.
@@ -21,4 +28,3 @@ Pricing and validation are pure internal policy, not pass-through adapters.
 3. The WooCommerce adapter always sends `draft` and `hidden`.
 4. A failed product does not abort the rest of a batch.
 5. Product fixtures must never carry credentials, cookies, or customer data.
-

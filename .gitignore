@@ -21,6 +21,8 @@ build/
 queue_items.jsonl
 queues/
 profiles.json
+reports/
+import-history.sqlite3*
 *_urls.txt
 *_registry.json
 codex_listing_out/

@@ -42,7 +42,34 @@
     .section-nav { display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
     .section-nav a { color:var(--green); background:#fff; border:1px solid #c6dbce;
       padding:9px 15px; border-radius:999px; font-weight:750; text-decoration:none; }
-    #pricing-title, #connections { scroll-margin-top:80px; }
+    #pricing-title, #connections, #history-title { scroll-margin-top:80px; }
+    .history-panel { margin-top:22px; }
+    .history-panel .panel-head { align-items:flex-start; flex-wrap:wrap; }
+    .history-intro { margin:8px 0 0; max-width:750px; color:var(--muted); }
+    .history-card-head, .history-actions, .history-counts { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; }
+    .history-card-head { justify-content:space-between; align-items:flex-start; }
+    .history-card h3 { margin:0 0 4px; font-weight:750; font-size:16px; line-height:1.55; }
+    .history-card p { margin:6px 0; }
+    .history-run-id { font:12px/1.5 ui-monospace,Consolas,monospace; color:var(--muted); overflow-wrap:anywhere; }
+    .history-counts { margin:12px 0; }
+    .history-chip { border-radius:8px; padding:4px 8px; font-size:13px; background:#eef2f0; }
+    .history-chip.caution { color:var(--amber); background:var(--amber2); }
+    .history-details { margin-top:15px; padding-top:15px; border-top:1px solid var(--line); }
+    .history-items { display:grid; gap:12px; padding:0; margin:14px 0 0; list-style:none; }
+    .history-item { min-width:0; background:#f6f8f6; padding:14px; border-radius:12px; }
+    .history-item h4 { margin:0 0 9px; font-size:15px; overflow-wrap:anywhere; }
+    .history-facts { display:grid; grid-template-columns:minmax(110px,.28fr) minmax(0,1fr); gap:6px 15px; margin:0; font-size:13px; }
+    .history-facts dt { color:var(--muted); }
+    .history-facts dd { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .history-facts a { color:var(--green); }
+    .history-panel .pricing-error { margin:12px 0; }
+    @media (max-width:520px) {
+      .history-panel { padding:18px; }
+      .history-actions { display:grid; grid-template-columns:1fr; width:100%; }
+      .history-actions button { width:100%; }
+      .history-facts { grid-template-columns:1fr; gap:3px; }
+      .history-facts dd { margin-bottom:8px; }
+    }
     .pricing-panel .panel-head { align-items:flex-start; }
     .pricing-state { flex-shrink:0; border-radius:999px; padding:6px 11px; font-size:13px;
       background:var(--green2); color:var(--green); }
@@ -223,7 +250,7 @@
       <div class="flow-step"><b>04 · REVIEW</b><span>审核后存草稿</span></div>
       <p class="flow-note">不是批量爬虫：不遍历站点、不绕过登录或限流。正式供应商适配器只使用操作者自行申请并获准使用的官方 API；本地 AI 需要已有登录与可用额度。</p>
     </div>
-    <nav class="section-nav" aria-label="面板导航"><a href="#connections">连接档案</a><a href="#pricing-title">定价工作台 ↓</a></nav>
+    <nav class="section-nav" aria-label="面板导航"><a href="#connections">连接档案</a><a href="#pricing-title">定价工作台 ↓</a><a href="#history-title">工作记录</a></nav>
     <main class="grid" id="connections">
       <section class="panel">
         <div class="panel-head"><h2 id="form-title">新增连接</h2><div class="step">1</div></div>
@@ -369,12 +396,22 @@ B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最�
         </fieldset>
       </form>
     </section>
+    <section id="work-history" class="panel history-panel" aria-labelledby="history-title">
+      <div class="panel-head"><div><h2 id="history-title">工作记录</h2>
+        <p class="history-intro">查看每批处理的时间、原商品链接与结果，下载可用记事本打开的 TXT 报告。预览完成不代表已创建店铺商品。</p>
+        <p class="hint">时间统一显示为 UTC。此处读取本机已有记录；运行中的批次请手动刷新。</p></div>
+        <button id="history-refresh" class="secondary" type="button">刷新工作记录</button></div>
+      <p id="history-status" class="hint" role="status" aria-live="polite"></p>
+      <div id="history-error" class="pricing-error" role="alert" hidden></div>
+      <div id="history-list" class="cards"></div>
+    </section>
     <footer><span>备注保存在用户配置目录；秘密保存在系统凭据库。</span>
       <button id="stop" class="secondary" type="button">停止本机面板</button></footer>
   </div>
   <div id="toast" class="toast"></div>
   <script src="/assets/dashboard-i18n.js"></script>
   <script src="/assets/dashboard-fx.js"></script>
+  <script src="/assets/dashboard-history.js"></script>
   <script>
     const token = new URLSearchParams(location.hash.slice(1)).get('token') || '';
     history.replaceState(null, '', location.pathname);
@@ -382,6 +419,7 @@ B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最�
     let state = {providers:[], profiles:[], pricing:null};
     let pricingTimer = 0;
     let freightConverter = null;
+    let historyViewer = null;
     const $ = id => document.getElementById(id);
     const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
     let languageStorage;
@@ -722,9 +760,11 @@ B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最�
       localizeProviderFields(); renderProfiles(); renderToast();
       schedulePricingPreview(); renderSaveError();
       freightConverter?.localize();
+      historyViewer?.localize();
     };
     $('stop').onclick=async()=>{try{await api('/api/shutdown',{method:'POST',body:'{}'}); document.body.innerHTML=`<div class="shell"><section class="panel"><h1>${esc(t('面板已停止'))}</h1><p>${esc(t('可以关闭这个页面。'))}</p></section></div>`;}catch(error){toast(()=>errorText(error),true);}};
     translateStaticCopy();
+    historyViewer=CatalogFlowHistory.mount({container:$('work-history'),i18n,api});
     refresh().catch(error=>toast(()=>t('无法打开配置：{error}', {error:errorText(error)}),true));
   </script>
 </body>

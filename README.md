@@ -194,7 +194,12 @@ Run a local preview:
 python -m catalogflow product.json --source alibaba-manual --generator claude
 ```
 
-The result is written to `output/preview.json`, which is ignored by Git.
+The result is written to `output/preview.json`, which is ignored by Git. Each CLI import also
+archives a separate timestamped work report (TXT and JSON) in your user configuration directory.
+The dashboard's **Work history** section lists runs and downloads a readable TXT report with
+source links, per-item outcomes, timestamps, and any store draft IDs. Repeated previews remain
+allowed; completed drafts are protected by a store-scoped history registry. Interrupted or
+uncertain writes require review before another attempt. See [Work reports](docs/work-reports.md).
 Normalized JSON labeled `--source cj` must include a complete provider-neutral `shipping_quote`
 for every variant; missing CJ freight is rejected rather than priced as zero. Prefer the official
 CJ profile flow below when starting from a CJ URL or PID.
@@ -271,6 +276,14 @@ CatalogFlow does not distribute, broker, share, or help bypass access to supplie
 approval, account eligibility, data rights, quotas, and fees belong to each user and provider.
 
 ## Optional hidden-draft write
+
+Multi-variant products retain their individual attributes and prices. Authorized gallery and
+variant images use bounded temporary downloads and the WordPress media API. Image uploads require
+an additional WordPress username and **application password** with media-upload permission; these
+optional fields are available in the WooCommerce profile. The application password stays in the
+operating-system keyring. WooCommerce consumer keys alone cannot authenticate the WordPress media
+endpoint. Without images, only the normal WooCommerce credentials are needed. Products and
+variations remain drafts; uploaded media files can be directly accessible on the store's server.
 
 Set the three `WOOCOMMERCE_*` variables shown in `.env.example` in your local environment,
 review the preview, and then explicitly acknowledge the write:

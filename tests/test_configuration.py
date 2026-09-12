@@ -62,6 +62,28 @@ def test_profile_resolves_runtime_environment(tmp_path) -> None:
     }
 
 
+def test_media_application_password_stays_in_keyring(tmp_path) -> None:
+    repository = ProfileRepository(tmp_path)
+    secrets = MemorySecretStore()
+    profile = repository.save(
+        provider="woocommerce",
+        label="Media test store",
+        notes="",
+        values={"url": "https://store.example", "media_username": "catalog-editor"},
+        secrets={"media_application_password": "synthetic-media-password"},
+        secret_store=secrets,
+    )
+    assert "synthetic-media-password" not in repository.path.read_text(encoding="utf-8")
+    visible = public_profile(profile, secrets)
+    assert "synthetic-media-password" not in json.dumps(visible)
+    assert visible["configured_secret_fields"] == ["media_application_password"]
+    resolved = environment_for_profile(profile, secrets)
+    assert resolved["WOOCOMMERCE_MEDIA_APPLICATION_PASSWORD"] == secrets.get(
+        profile.id, "media_application_password"
+    )
+    assert resolved["WOOCOMMERCE_MEDIA_USERNAME"] == "catalog-editor"
+
+
 def test_shopify_profile_keeps_client_secret_out_of_metadata(tmp_path) -> None:
     repository = ProfileRepository(tmp_path)
     secrets = MemorySecretStore()

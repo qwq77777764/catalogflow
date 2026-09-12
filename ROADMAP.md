@@ -21,6 +21,8 @@ CatalogFlow is developed in small, auditable vertical slices.
 
 ## Next
 
+- Package a Windows desktop launcher after the restored workflow has been reviewed locally.
+
 - Connect a narrowly scoped CJ browser selector or frozen queue to the same adapter.
 - Add variant-level inventory origin selection instead of the current explicit/default origin.
 - Add a review UI for comparing returned logistics routes before choosing one.
@@ -40,11 +42,18 @@ CatalogFlow is developed in small, auditable vertical slices.
 - Add redacted import diagnostics that never contain credentials or raw responses.
 - Stabilize image-assisted Codex and Claude generation across supported CLI releases.
 
-## 0.3 — Reviewable drafts
+## Reviewable drafts
 
 - Render a human-readable preview and field-level diff before store writes.
-- Add idempotency keys and duplicate detection.
-- Add a WooCommerce fake server for end-to-end draft tests.
+- Add a guided review step for uncertain writes and explicit reconciliation with existing drafts.
+- Add a visual import wizard that connects the existing preview pipeline to the work history UI.
+
+## Shipped in 0.7 — Work records and complete draft export
+
+- Archive each import in timestamped TXT/JSON reports with source links and per-item outcomes.
+- Review local reports in the bilingual dashboard and download TXT copies.
+- Preserve store-scoped completed/uncertain draft history and block unsafe duplicate creation.
+- Export individual variations and bounded authorized images through authenticated REST APIs.
 
 ## Later
 
