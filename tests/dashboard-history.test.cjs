@@ -43,6 +43,9 @@ test('uncertain writes tell the user to reconcile the store and stable diagnosti
   assert.match(diagnosticText('woocommerce_existing_product',ui),/did not create a duplicate/);
   assert.match(diagnosticText('configuration_failed',ui),/selected connection profile/);
   assert.match(diagnosticText('saved_pricing_invalid',ui),/Saved pricing settings are invalid/);
+  assert.match(diagnosticText('cj_logistics_unavailable',ui),/route is unavailable for this variant/);
+  assert.match(diagnosticText('cj_freight_unavailable',ui),/No usable freight quote/);
+  assert.match(diagnosticText('codex_cli_upgrade_required',ui),/Select a newer Codex CLI/);
   assert.equal(diagnosticText('__proto__',ui),'__proto__');
   ui.setLocale('zh-CN');
   assert.match(ui.t(statusLabels.blocked_incomplete),/上次写入结果未确认/);
@@ -50,6 +53,9 @@ test('uncertain writes tell the user to reconcile the store and stable diagnosti
   assert.match(diagnosticText('review_required',ui),/先核对店铺/);
   assert.match(diagnosticText('configuration_failed',ui),/必填配置/);
   assert.match(diagnosticText('saved_pricing_invalid',ui),/已保存的定价设置无效/);
+  assert.match(diagnosticText('cj_logistics_unavailable',ui),/该线路不可用于此变体.*核对线路后重试/);
+  assert.match(diagnosticText('cj_freight_unavailable',ui),/未返回该变体的可用运费报价/);
+  assert.match(diagnosticText('codex_cli_upgrade_required',ui),/当前 Codex CLI 版本过旧/);
   assert.equal(diagnosticText('unknown_safe_code',ui),'unknown_safe_code');
 });
 

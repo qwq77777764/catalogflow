@@ -1,0 +1,26 @@
+CatalogFlow Windows runtime notices
+===================================
+
+CatalogFlow is distributed under the MIT license. Its Windows executable also
+contains independently licensed runtime components; their license texts follow
+in the generated THIRD_PARTY_LICENSES.txt supplied with the release.
+
+CPython and the bundled standard-library components are supplied unchanged from
+the official CPython Windows distribution. Its LICENSE.txt includes the Python
+license and third-party license texts, including the Apache License 2.0.
+https://www.python.org/downloads/windows/
+
+The bundled libcrypto and libssl libraries are from OpenSSL, as supplied with
+CPython. OpenSSL 3.x uses the Apache License 2.0, whose complete text is included
+in the CPython license section below.
+https://github.com/openssl/openssl/blob/openssl-3.0/LICENSE.txt
+
+PyInstaller's bootloader is distributed under its documented bootloader
+exception; its bundled runtime hooks use the Apache License 2.0. The complete
+PyInstaller licensing terms are included below. CatalogFlow does not modify
+these bundled components.
+https://pyinstaller.org/en/stable/license.html
+
+Tcl/Tk and the Windows Credential Manager adapter dependencies retain their
+own licenses, included below. No optional third-party keyring plugins or AI CLI
+executables are included in this release.

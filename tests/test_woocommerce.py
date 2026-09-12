@@ -158,6 +158,10 @@ def test_media_bytes_upload_once_then_shared_attachment_ids(source, store, monke
     publisher.create_hidden_draft(product, listing)
     assert downloaded == [common, "https://images.example/2.jpg"]
     assert len(transport.uploads) == 2
+    names = [path.name for path, _ in transport.uploads]
+    assert len(set(names)) == 2
+    assert all(path.stem.isascii() and path.stem.isdigit() and len(path.stem) > 20
+               for path, _ in transport.uploads)
     assert all(data == b"synthetic-image" for _, data in transport.uploads)
     assert all(not path.exists() for path, _ in transport.uploads)
     update = next(payload for method, _, payload in transport.calls if method == "PUT")
@@ -214,7 +218,8 @@ def test_unsafe_images_rejected_before_store_mutation(
 def test_duplicate_store_sku_blocks_new_write_and_reports_existing_id(source, store) -> None:
     product, listing = source
     publisher, transport = store
-    transport.existing = [{"id": 123, "status": "draft"}]
+    transport.existing = [{"id": 123, "status": "draft",
+                           "sku": publisher.build_payload(product, listing)["sku"]}]
     with pytest.raises(WooCommerceDraftError, match="woocommerce_existing_product") as error:
         publisher.create_hidden_draft(product, listing)
     assert error.value.store_id == "123"
@@ -223,6 +228,18 @@ def test_duplicate_store_sku_blocks_new_write_and_reports_existing_id(source, st
     assert len(transport.calls) == 1
     query_sku = parse_qs(urlparse(transport.calls[0][1]).query)["sku"][0]
     assert query_sku == publisher.build_payload(product, listing)["sku"]
+
+
+@pytest.mark.parametrize("row", [{"id": 123, "sku": "unrelated-product"}, {"id": 123}, None])
+def test_store_ignoring_sku_filter_never_associates_an_unrelated_product(source, store, row):
+    product, listing = source
+    publisher, transport = store
+    transport.existing = [row]
+    with pytest.raises(WooCommerceDraftError, match="woocommerce_invalid_response") as error:
+        publisher.create_hidden_draft(product, listing)
+    assert error.value.store_id is None
+    assert error.value.write_started is False
+    assert len(transport.calls) == 1
 
 
 def test_partial_variation_failure_stops_and_keeps_parent_context(source, store) -> None:

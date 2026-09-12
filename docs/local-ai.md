@@ -79,6 +79,14 @@ $env:CATALOGFLOW_CLAUDE_MODEL = "your-supported-model-name"
 version. It does not submit a product, call a model, verify billing, or consume an AI request.
 The first actual generation is therefore the final login and entitlement test.
 
+An installed CLI can still be too old for its configured model. If a run reports
+`codex_cli_upgrade_required`, update that CLI using the official installation guide, or select
+an already installed compatible executable in the Codex connection's command field. CatalogFlow
+does not silently change the model or copy login credentials. On Windows, an older npm `codex.cmd`
+can appear before a newer native `codex.exe` on PATH; check both versions before selecting a path.
+The Windows EXE clears its bundled DLL search path for external CLI processes and suppresses their
+console windows while preserving the existing account login locations.
+
 On Windows:
 
 ```powershell

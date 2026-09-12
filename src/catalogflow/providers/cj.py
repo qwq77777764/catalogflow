@@ -36,6 +36,10 @@ _PATH_PID_RE = re.compile(rf"(?:^|[-_/])p-({_PID_PATTERN})(?:\.html|/|$)", re.I)
 class CjApiError(RuntimeError):
     """A redacted CJ API or normalization failure."""
 
+    def __init__(self, message: str, *, code: str | None = None) -> None:
+        super().__init__(message)
+        self.code = code
+
 
 @dataclass(frozen=True, slots=True)
 class _FreightOption:
@@ -337,7 +341,10 @@ def _choose_freight_option(value: object, preferred_logistics: str) -> _FreightO
         if cost is not None and method:
             candidates.append(_FreightOption(row=row, cost=cost))
     if not candidates:
-        raise CjApiError("CJ freight calculation returned no usable shipping option")
+        raise CjApiError(
+            "CJ freight calculation returned no usable shipping option",
+            code="cj_freight_unavailable",
+        )
 
     preferred = preferred_logistics.casefold()
     if preferred:
@@ -347,7 +354,10 @@ def _choose_freight_option(value: object, preferred_logistics: str) -> _FreightO
             if _text(candidate.row, "logisticName", "logisticsName").casefold() == preferred
         ]
         if not matches:
-            raise CjApiError("Configured CJ logistics method is unavailable for a variant")
+            raise CjApiError(
+                "Configured CJ logistics method is unavailable for a variant",
+                code="cj_logistics_unavailable",
+            )
         candidates = matches
     return min(candidates, key=lambda candidate: candidate.cost)
 

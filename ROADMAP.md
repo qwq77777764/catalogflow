@@ -21,8 +21,6 @@ CatalogFlow is developed in small, auditable vertical slices.
 
 ## Next
 
-- Package a Windows desktop launcher after the restored workflow has been reviewed locally.
-
 - Connect a narrowly scoped CJ browser selector or frozen queue to the same adapter.
 - Add variant-level inventory origin selection instead of the current explicit/default origin.
 - Add a review UI for comparing returned logistics routes before choosing one.
@@ -54,6 +52,14 @@ CatalogFlow is developed in small, auditable vertical slices.
 - Review local reports in the bilingual dashboard and download TXT copies.
 - Preserve store-scoped completed/uncertain draft history and block unsafe duplicate creation.
 - Export individual variations and bounded authorized images through authenticated REST APIs.
+
+## Shipped in 0.8 — Windows desktop launcher
+
+- Run the bilingual local dashboard from a standalone Windows x64 EXE without installing Python.
+- Keep existing local reports, configuration, and Windows Credential Manager storage.
+- Reopen one account-scoped launcher and stop its local server on exit.
+- Validate packaged resources, authenticated HTTP behavior, and optional temporary vault storage.
+- Report unavailable CJ freight routes and outdated Codex CLI versions with actionable messages.
 
 ## Later
 

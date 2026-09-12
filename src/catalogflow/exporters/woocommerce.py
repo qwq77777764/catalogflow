@@ -11,6 +11,7 @@ import math
 import os
 import urllib.error
 import urllib.request
+import uuid
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from urllib.parse import unquote, urlencode, urlparse
@@ -173,9 +174,14 @@ class WooCommercePublisher:
             raise WooCommerceDraftError("woocommerce_request_failed") from None
 
     def _find_existing(self, product: Product) -> None:
-        query = urlencode({"sku": _source_sku(product), "status": "any", "per_page": 2})
+        expected_sku = _source_sku(product)
+        query = urlencode({"sku": expected_sku, "status": "any", "per_page": 2})
         existing = self._request("GET", "/wp-json/wc/v3/products?" + query)
         if not isinstance(existing, list):
+            raise WooCommerceDraftError("woocommerce_invalid_response")
+        if any(not isinstance(row, dict) or row.get("sku") != expected_sku for row in existing):
+            # A store customization can disable SKU filtering and return unrelated products.
+            # Never attach those IDs to this import or proceed without a reliable lookup.
             raise WooCommerceDraftError("woocommerce_invalid_response")
         if existing:
             identifier = str(_resource_id(existing[0]))
@@ -239,7 +245,13 @@ class WooCommercePublisher:
                     paths = materialize_authorized_images(batch, Path(directory) / str(offset))
                     if len(paths) != len(batch):
                         raise WooCommerceDraftError("woocommerce_image_download_failed")
-                    image_paths.update(zip(batch, paths, strict=True))
+                    # Avoid reusing short download names across products or image batches.
+                    # Public upload names contain only a fresh numeric ID and extension.
+                    upload_paths = [
+                        path.rename(path.with_name(f"{uuid.uuid4().int}{path.suffix}"))
+                        for path in paths
+                    ]
+                    image_paths.update(zip(batch, upload_paths, strict=True))
                 write_started = True
                 result = self._request("POST", "/wp-json/wc/v3/products", payload)
                 identifier = str(_resource_id(result))

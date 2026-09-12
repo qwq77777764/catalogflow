@@ -4,14 +4,21 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import tempfile
 from pathlib import Path
 
 from ..media import materialize_authorized_images
 from ..models import Listing, Product
 from ..pricing import PricingPolicy, shipping_cost_for_pricing
-from .common import build_listing_prompt, find_cli, safe_cli_environment
+from .common import build_listing_prompt, find_cli, run_external, safe_cli_environment
+
+
+class CodexCliError(RuntimeError):
+    """A stable diagnostic selected from known CLI failures without exposing stderr."""
+
+    def __init__(self, code: str) -> None:
+        self.code = code
+        super().__init__(code)
 
 
 class CodexCliListingGenerator:
@@ -56,7 +63,7 @@ class CodexCliListingGenerator:
             for image_path in image_paths:
                 command.extend(["-i", str(image_path)])
             command.append("-")
-            process = subprocess.run(  # noqa: S603 - fixed executable and argument list
+            process = run_external(
                 command,
                 input=self.build_prompt(product),
                 text=True,
@@ -68,6 +75,8 @@ class CodexCliListingGenerator:
                 env=safe_cli_environment(),
             )
             if process.returncode != 0:
+                if "requires a newer version of Codex" in (process.stderr or ""):
+                    raise CodexCliError("codex_cli_upgrade_required")
                 raise RuntimeError(f"Codex CLI exited with status {process.returncode}")
             if not output.exists():
                 raise RuntimeError("Codex CLI did not create structured output")
