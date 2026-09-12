@@ -77,6 +77,11 @@ Non-secret metadata stays in the user's configuration directory and secrets go t
 Credential Manager, macOS Keychain, or the available Linux keyring. Existing secrets are never
 returned to the page.
 
+Use the toolbar's **Language** selector to switch the whole panel between **中文 (CN)** and
+**English (US)**. The first visit follows the browser language, falling back to English. The browser
+remembers only the language code for the current local address and port. Switching language preserves
+entered values and pending edits; core pricing remains in USD and pricing is not saved automatically.
+
 WooCommerce, Codex, and Claude profiles can be used now. The CJ source adapter is available as a
 preview for one explicitly selected CJ product; Alibaba/1688 and Zendrop remain planned. See
 [docs/configuration-dashboard.md](docs/configuration-dashboard.md) for storage details, profile
@@ -90,8 +95,9 @@ data—not silent scraping.
 
 ## Choose a pricing plan visually
 
-The same local dashboard also contains a pricing panel. It shows the cost inputs and a live,
-auditable result before anything is written to a store. Two deterministic plans are available:
+The local dashboard compares two deterministic plans side by side using the same example costs.
+Each result shows the price, fee and reserve deductions, estimated profit per unit and margin,
+theoretical break-even price, `.95` adjustment, and any minimum-price constraint that takes effect:
 
 - **Margin plan (default):** adds product cost, per-unit shipping, optional user-estimated taxes or
   duties, payment fees, return reserve, operating reserve, target margin, minimum price, and a
@@ -100,11 +106,29 @@ auditable result before anything is written to a store. Two deterministic plans 
   `1×` to `100×`), then adds shipping, optional estimated taxes or duties, and the fixed payment
   fee once. Shipping and taxes are not silently multiplied. It also uses the `.95` ending.
 
-Enter the multiplier and the example cost in the panel to compare the plans in real time, then
-save the selected defaults locally. The settings contain no secrets and are stored as
-`pricing.json` beside the local profile metadata. Taxes and duties are operator estimates only;
-CatalogFlow does not query customs, provide tax advice, or infer a tax rate. A missing settings
-file keeps the legacy margin defaults, so existing previews remain compatible.
+Plan B does not use percentage fees or reserves to set its price, but the profit estimate deducts
+them. It does not automatically achieve the target margin; a low multiplier can produce a loss.
+Estimated profit covers the entered costs and reserves, not accounting net profit.
+
+All monetary inputs are **USD per unit**. The fixed payment fee assumes one unit per order; shared
+fees for multi-unit orders are not allocated. For CJ, use the complete quote's per-unit freight
+once; do not duplicate it across inbound and last-mile shipping. Tax/duty values are operator
+estimates, with no automatic tax-rate lookup.
+
+The currency converter below the sample costs displays the **last-mile / end-to-end shipping**
+amount in a selected currency. It shows the original USD amount, converted amount, rate, source,
+and reference date. Its three fields are currency, an editable rate, and the converted total.
+The Frankfurter daily rate is filled automatically and can be edited directly; changing
+language preserves your selection and manual input. Reference rates are not live bank quotes.
+Conversion is for comparison only: it does not change either pricing plan, store currency, or
+saved settings. Shipping amounts and credentials never go to the rate provider. See the
+[converter details](docs/configuration-dashboard.md#convert-the-last-mile-shipping-example).
+
+Example product cost and shipping stay in the trial calculation. Restoring defaults or undoing
+edits changes the form; click **Save** to apply the selected settings to later CLI runs. Saving
+does not update existing previews or store products. Non-secret settings remain in `pricing.json`
+beside the local profile metadata, and an absent file keeps the legacy margin defaults. See the
+[pricing formulas and worked example](docs/configuration-dashboard.md#visual-pricing-panel).
 
 ## Connect Codex or Claude Code without an API key
 
