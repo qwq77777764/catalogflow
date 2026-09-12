@@ -24,6 +24,7 @@ from .cost_formula import CostFormulaError
 from .exchange_rates import ExchangeRateService, ExchangeRatesUnavailable
 from .pricing import PricingPolicy, PricingScheme
 from .pricing_settings import PricingSettingsRepository
+from .run_history import HistoryRepository
 
 MAX_REQUEST_BYTES = 64 * 1024
 
@@ -45,6 +46,7 @@ class DashboardApplication:
         )
         self.origin = ""
         self.exchange_rate_service = exchange_rate_service or ExchangeRateService()
+        self.history = HistoryRepository(repository.directory)
 
     def state(self) -> dict[str, object]:
         providers = [
@@ -153,6 +155,14 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         if parsed.path == "/assets/dashboard-fx.js":
             self._serve_asset("dashboard-fx.js", "text/javascript; charset=utf-8")
             return
+        if parsed.path == "/assets/dashboard-history.js":
+            self._serve_asset("dashboard-history.js", "text/javascript; charset=utf-8")
+            return
+        if parsed.path == "/api/reports" or parsed.path.startswith("/api/reports/"):
+            if not self._authorized():
+                return
+            self._serve_report(parsed.path)
+            return
         if parsed.path == "/api/exchange-rates":
             if not self._authorized():
                 return
@@ -256,6 +266,30 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             )
             return
         self._send_json(HTTPStatus.OK, {"ok": True})
+
+    def _serve_report(self, path: str) -> None:
+        history = self.server.application.history
+        try:
+            if path == "/api/reports":
+                payload = {"reports": history.recent()}
+            else:
+                parts = path.removeprefix("/api/reports/").split("/")
+                if len(parts) == 1:
+                    payload = history.read(parts[0])
+                elif len(parts) == 2 and parts[1] == "text":
+                    payload = {
+                        "text": history.report_text(parts[0]),
+                        "filename": f"CatalogFlow-report-{parts[0]}.txt",
+                    }
+                else:
+                    raise ValueError("Invalid report route")
+        except (FileNotFoundError, ValueError):
+            self._send_json(HTTPStatus.NOT_FOUND, {"error": "report_not_found"})
+            return
+        except (OSError, RuntimeError):
+            self._send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "reports_unavailable"})
+            return
+        self._send_json(HTTPStatus.OK, payload)
 
     def _serve_asset(self, filename: str, content_type: str) -> None:
         # Only fixed filenames from the routes above reach the filesystem.

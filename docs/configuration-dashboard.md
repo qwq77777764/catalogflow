@@ -50,6 +50,16 @@ change which settings apply to later CLI runs.
 Developers can run the bundled dashboard checks with `node --test tests/dashboard-*.test.cjs`
 (Node.js 22, no npm dependencies). CI runs them alongside the Python tests.
 
+## Work history
+
+The **Work history** section reads the same local report archive written by CLI imports. Refresh
+the list after a run, open its details, or download its UTF-8 TXT report. Report requests use the
+dashboard's session token; the token is never included in download URLs. Chinese and English
+labels distinguish previews, completed hidden drafts, skipped duplicates, and uncertain writes.
+
+This viewer does not start an import, publish a product, or import an old private registry. An
+empty history means no reports exist in this configuration directory. See [Work reports](work-reports.md).
+
 ## What a connection profile contains
 
 Each profile has:

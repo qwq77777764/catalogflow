@@ -61,6 +61,11 @@ def post_json(origin, path, payload, *, token=None, include_token=True):
             "text/javascript; charset=utf-8",
             b"window.CatalogFlowFX = {};",
         ),
+        (
+            "/assets/dashboard-history.js",
+            "text/javascript; charset=utf-8",
+            b"window.CatalogFlowHistory = {};",
+        ),
     ],
 )
 def test_dashboard_static_assets_are_available_with_security_headers(
@@ -105,6 +110,7 @@ def test_dashboard_static_assets_are_available_with_security_headers(
         "/assets/%2e%2e/dashboard.py",
         "/assets/dashboard-i18n.js/../dashboard.py",
         "/assets/dashboard-fx.js/../dashboard.py",
+        "/assets/dashboard-history.js/../dashboard.py",
         "/assets/dashboard.py",
     ],
 )

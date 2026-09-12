@@ -20,7 +20,8 @@ from .generators import (
 from .models import ImportMode, ImportRequest
 from .pipeline import import_products
 from .pricing_settings import PricingSettingsRepository
-from .providers import CjApiError, CjApiSource, JsonFileSource
+from .providers import CjApiSource, JsonFileSource
+from .run_history import HistoryRepository, safe_error
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -146,6 +147,56 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--ai-profile requires --generator codex or --generator claude")
     if args.supplier_profile and args.source != "cj":
         parser.error("--supplier-profile currently requires --source cj")
+    mode = ImportMode.DRAFT if args.draft else ImportMode.DRY_RUN
+    try:
+        return _execute_import(args, mode)
+    except (OSError, RuntimeError, ValueError):
+        # If durable storage fails, stop without printing paths or remote response details.
+        # Any existing draft reservation remains in place for manual review.
+        print(json.dumps({"ok": False, "mode": mode, "error": "reports_unavailable"}))
+        return 1
+
+
+def _execute_import(args, mode: ImportMode) -> int:
+    history = HistoryRepository()
+    try:
+        source_adapter, generator, publisher = _prepare_import(args)
+    except (Exception, SystemExit) as exc:
+        run = history.create_run(mode)
+        item = run.start_item(source=args.source, source_url=args.product_reference)
+        item.update(status="rejected", errors=["configuration_failed", safe_error(exc)])
+        run.finish_item(item)
+        run.finish()
+        print(json.dumps({
+            "ok": False, "mode": mode, "error": "configuration_failed",
+            "run_id": run.run_id, "report": str(run.directory / "report.txt"),
+        }))
+        return 1
+    report = import_products(
+        [ImportRequest(source=args.source, reference=args.product_reference)],
+        sources={args.source: source_adapter}, generator=generator, mode=mode,
+        publisher=publisher, history=history,
+    )
+    try:
+        destination = write_preview(report, args.output)
+    except (OSError, ValueError):
+        print(json.dumps({
+            "ok": False, "mode": report.mode, "error": "preview_output_failed",
+            "run_id": report.run_id, "report": report.report_path,
+        }))
+        return 1
+    print(json.dumps({
+        "ok": report.ok, "mode": report.mode, "preview": str(destination),
+        "run_id": report.run_id, "report": report.report_path,
+    }))
+    return 0 if report.ok else 1
+
+
+class _InvalidSavedPricing(ValueError):
+    code = "saved_pricing_invalid"
+
+
+def _prepare_import(args):
     if args.ai_profile:
         _load_profile(args.ai_profile, args.generator)
     elif args.generator in {"codex", "claude"}:
@@ -154,7 +205,6 @@ def main(argv: list[str] | None = None) -> int:
         _load_profile(args.store_profile, "woocommerce")
     elif args.draft:
         _load_default_profile("woocommerce")
-    mode = ImportMode.DRAFT if args.draft else ImportMode.DRY_RUN
     publisher = WooCommercePublisher.from_environment() if args.draft else None
     generators = {
         "codex": CodexCliListingGenerator,
@@ -163,27 +213,15 @@ def main(argv: list[str] | None = None) -> int:
     }
     try:
         pricing_policy = PricingSettingsRepository().load()
-    except (RuntimeError, ValueError) as exc:
-        raise SystemExit(f"Saved pricing settings are invalid: {exc}") from None
+    except (RuntimeError, ValueError):
+        raise _InvalidSavedPricing from None
     generator = generators[args.generator](policy=pricing_policy)
     if args.supplier_profile:
         _load_profile(args.supplier_profile, "cj")
-        try:
-            source_adapter = CjApiSource.from_environment()
-        except CjApiError as exc:
-            raise SystemExit(str(exc)) from None
+        source_adapter = CjApiSource.from_environment()
     else:
         source_adapter = JsonFileSource(args.source)
-    report = import_products(
-        [ImportRequest(source=args.source, reference=args.product_reference)],
-        sources={args.source: source_adapter},
-        generator=generator,
-        mode=mode,
-        publisher=publisher,
-    )
-    destination = write_preview(report, args.output)
-    print(json.dumps({"ok": report.ok, "mode": report.mode, "preview": str(destination)}))
-    return 0 if report.ok else 1
+    return source_adapter, generator, publisher
 
 
 if __name__ == "__main__":

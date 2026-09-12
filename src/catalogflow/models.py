@@ -34,6 +34,7 @@ class Variant:
     cost: float
     attributes: dict[str, str] = field(default_factory=dict)
     shipping_quote: ShippingQuote | None = None
+    image_url: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +46,7 @@ class Product:
     variants: tuple[Variant, ...]
     images: tuple[str, ...] = ()
     facts: dict[str, str] = field(default_factory=dict)
+    source_url: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,16 +72,21 @@ class ImportItemResult:
     listing: Listing | None = None
     store_id: str | None = None
     errors: tuple[str, ...] = ()
+    store_url: str = ""
+    artifact_path: str = ""
 
 
 @dataclass(frozen=True, slots=True)
 class ImportReport:
     mode: ImportMode
     items: tuple[ImportItemResult, ...]
+    run_id: str = ""
+    report_path: str = ""
 
     @property
     def ok(self) -> bool:
-        return all(item.status in {"previewed", "drafted"} for item in self.items)
+        return all(item.status in {"previewed", "drafted", "skipped_duplicate"}
+                   for item in self.items)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

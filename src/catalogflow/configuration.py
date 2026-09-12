@@ -40,6 +40,22 @@ PROVIDERS: dict[str, dict[str, object]] = {
                 "environment": "WOOCOMMERCE_CONSUMER_SECRET",
                 "placeholder": "cs_…",
             },
+            {
+                "name": "media_username",
+                "label": "WordPress username (for image uploads)",
+                "type": "text",
+                "secret": False,
+                "environment": "WOOCOMMERCE_MEDIA_USERNAME",
+                "placeholder": "User with upload_files permission; optional without images",
+            },
+            {
+                "name": "media_application_password",
+                "label": "WordPress application password (for image uploads)",
+                "type": "password",
+                "secret": True,
+                "environment": "WOOCOMMERCE_MEDIA_APPLICATION_PASSWORD",
+                "placeholder": "Application password, not your account login password",
+            },
         ],
     },
     "wordpress_ssh": {

@@ -14,7 +14,7 @@ import re
 import threading
 import time
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Protocol
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlparse
@@ -189,11 +189,23 @@ class CjApiSource:
         data = _response_data(response, operation="product detail")
         _normalize_product(data, expected_id=product_id)
         freight_quotes = self._freight_quotes(data, token)
-        return _normalize_product(
+        product = _normalize_product(
             data,
             expected_id=product_id,
             freight_quotes=freight_quotes,
         )
+        parsed = urlparse(reference)
+        source_url = ""
+        if parsed.scheme == "https" and parsed.username is None and parsed.password is None:
+            query = parse_qs(parsed.query, max_num_fields=50)
+            product_query = ""
+            for name in ("pid", "productId", "product_id"):
+                candidate = str((query.get(name) or [""])[0])
+                if _PID_RE.fullmatch(candidate):
+                    product_query = f"{name}={candidate}"
+                    break
+            source_url = parsed._replace(query=product_query, fragment="").geturl()
+        return replace(product, source_url=source_url)
 
     def _freight_quotes(
         self,
@@ -460,6 +472,7 @@ def _normalize_variant(
         cost=cost,
         attributes=_variant_attributes(dimension_names, option_values),
         shipping_quote=shipping_quote,
+        image_url=_text(row, "img", "variantImage"),
     )
 
 

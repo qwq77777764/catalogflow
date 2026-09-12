@@ -15,7 +15,16 @@ The public repository is a clean-room extraction, not a copy of that directory.
 - automatic public publishing;
 - unauthenticated localhost bridges and unrestricted URL downloaders.
 
+## Restored workflow behavior
+
+CatalogFlow now implements its own timestamped per-run TXT/JSON work reports, history viewer, and
+store-scoped draft duplicate protection. Gallery images and individual variants are exported
+through supported REST APIs. These are fresh implementations with synthetic tests, not copies of
+private runtime scripts or data. Existing private reports and registries stay where they are; this
+release does not ingest them or assume they describe the current state of a store.
+
+See [Work reports](work-reports.md) for source-link fields, timestamps, and interrupted-write behavior.
+
 Future provider adapters must use official APIs or operator-authorized input. Future
 browser helpers must authenticate local requests, restrict origins and payload size, and
 reject localhost/private-network downloads.
-

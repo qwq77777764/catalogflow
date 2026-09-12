@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "catalogflow"
-version = "0.6.0"
+version = "0.7.0"
 description = "A safe, human-approved product catalog pipeline for WooCommerce."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -36,6 +36,7 @@ packages = ["src/catalogflow"]
 "src/catalogflow/dashboard.html" = "catalogflow/dashboard.html"
 "src/catalogflow/dashboard-i18n.js" = "catalogflow/dashboard-i18n.js"
 "src/catalogflow/dashboard-fx.js" = "catalogflow/dashboard-fx.js"
+"src/catalogflow/dashboard-history.js" = "catalogflow/dashboard-history.js"
 "src/catalogflow/browser/catalogflow-collector.user.js" = "catalogflow/browser/catalogflow-collector.user.js"
 
 [tool.pytest.ini_options]

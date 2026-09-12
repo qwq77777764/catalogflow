@@ -22,6 +22,7 @@ class JsonFileSource:
                 cost=float(row["cost"]),
                 attributes={str(k): str(v) for k, v in row.get("attributes", {}).items()},
                 shipping_quote=_shipping_quote(row.get("shipping_quote")),
+                image_url=str(row.get("image_url", "")),
             )
             for row in payload["variants"]
         )
@@ -33,6 +34,7 @@ class JsonFileSource:
             variants=variants,
             images=tuple(str(value) for value in payload.get("images", [])),
             facts={str(k): str(v) for k, v in payload.get("facts", {}).items()},
+            source_url=str(payload.get("source_url", "")),
         )
 
 

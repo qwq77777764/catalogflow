@@ -4,6 +4,17 @@ All notable changes are documented here.
 
 ## Unreleased
 
+## 0.7.0 — 2026-09-12
+
+- Restored the earlier operator workflow's timestamped TXT/JSON run reports, per-item source links
+  and outcomes, and a bilingual read-only dashboard history viewer with TXT downloads.
+- Added durable store-scoped draft reservations and duplicate protection. Repeated previews stay
+  available; interrupted or partial writes preserve their evidence and block unsafe recreation.
+- Preserved individual product variants and authorized gallery/variant images in WooCommerce
+  drafts. WordPress media uploads use separately configured application-password credentials;
+  product and variation publication stays disabled.
+- Kept old private scripts, reports, registries, and production data outside the public package.
+
 ## 0.6.0 — 2026-09-12
 
 - Added an editable Plan B product-cost formula directly in its comparison card, with
