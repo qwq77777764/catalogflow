@@ -4,6 +4,25 @@ All notable changes are documented here.
 
 ## Unreleased
 
+## 0.9.0 — 2026-09-12
+
+- Added a bilingual three-step single-product import wizard to the authenticated local dashboard:
+  a CJ URL/PID through a saved official-API profile, or an authorized normalized JSON upload
+  (`alibaba-manual`, UTF-8 with optional BOM, up to 48 KiB), followed by Codex, Claude, or template
+  generation and review. A store connection is optional for previews.
+- Showed per-variant cost, freight, and USD price snapshots, image counts and safe image/source
+  links, and editable title, HTML description text, category, and tags before draft confirmation.
+- Kept the product, generated listing, saved pricing policy, and selected store in the server
+  session. Reviewed confirmation reuses that snapshot without repeating supplier or AI requests
+  or recalculating prices, and requires an acknowledgment plus an explicit hidden-draft action.
+- Connected visual imports to the existing TXT/JSON reports and store-scoped duplicate protection.
+  A single background task and guarded confirmation prevent repeated clicks from creating parallel
+  writes. Reopening an authenticated page can recover the running session's task; unconfirmed
+  previews do not survive application restart, while archived reports remain available.
+- Included the import JavaScript in the explicit Windows release-resource list. Alibaba/1688 URL
+  normalization, batch imports in the wizard, SSH store writes, and private-history migration remain
+  outside this release.
+
 ## 0.8.0 — 2026-09-12
 
 - Added a standalone Windows x64 EXE with a Chinese/English launcher, account-scoped single

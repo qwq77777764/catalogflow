@@ -202,6 +202,18 @@ def test_launcher_language_settings_accept_only_supported_values(tmp_path):
     assert desktop._load_language(path) == "zh-CN"
 
 
+def test_desktop_close_uses_atomic_import_shutdown_guard():
+    calls = []
+    service = object.__new__(desktop.DesktopService)
+    service.server = SimpleNamespace(application=SimpleNamespace(imports=SimpleNamespace(
+        prepare_shutdown=lambda: calls.append("blocked") or False,
+    )))
+    assert service.prepare_close() is False
+    service.server.application.imports.prepare_shutdown = lambda: calls.append("allowed") or True
+    assert service.prepare_close() is True
+    assert calls == ["blocked", "allowed"]
+
+
 def test_self_test_fails_when_unauthenticated_request_is_incorrectly_accepted(
     tmp_path, monkeypatch,
 ):

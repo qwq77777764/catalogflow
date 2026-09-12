@@ -26,6 +26,12 @@ _RUN_ID = re.compile(r"\d{8}T\d{12}Z-[a-f0-9]{32}")
 _MAX_FILE_BYTES = 2 * 1024 * 1024
 _MAX_ITEMS = 1000
 _ERROR_LABELS = {
+    "import_invalid_product": (
+        "商品资料不完整或超出导入限制 / Product data is incomplete or exceeds import limits"
+    ),
+    "import_invalid_edits": (
+        "商品文案或 HTML 未通过校验 / Listing copy or HTML did not pass validation"
+    ),
     "codex_cli_upgrade_required": (
         "当前 Codex CLI 版本过旧，请选择更新版本 / Select a newer Codex CLI in AI connections"
     ),

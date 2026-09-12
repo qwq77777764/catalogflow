@@ -42,9 +42,9 @@ CatalogFlow is developed in small, auditable vertical slices.
 
 ## Reviewable drafts
 
-- Render a human-readable preview and field-level diff before store writes.
+- Add a field-level comparison between generated and edited listing copy.
 - Add a guided review step for uncertain writes and explicit reconciliation with existing drafts.
-- Add a visual import wizard that connects the existing preview pipeline to the work history UI.
+- Add explicit cross-restart recovery for unconfirmed previews without bypassing a fresh review.
 
 ## Shipped in 0.7 — Work records and complete draft export
 
@@ -61,8 +61,21 @@ CatalogFlow is developed in small, auditable vertical slices.
 - Validate packaged resources, authenticated HTTP behavior, and optional temporary vault storage.
 - Report unavailable CJ freight routes and outdated Codex CLI versions with actionable messages.
 
+## Shipped in 0.9 — Visual single-product import
+
+- Start an authorized CJ URL/PID or normalized `alibaba-manual` JSON import in the local dashboard.
+- Choose Codex, Claude, or template generation and an optional saved WooCommerce connection.
+- Review individual cost, freight, and USD-price snapshots, image links, and editable listing copy.
+- Create only a hidden draft after explicit review; confirmation reuses the cached product and
+  pricing instead of rerunning supplier retrieval, AI generation, or pricing.
+- Run one background task per dashboard session and reuse existing reports and duplicate guards.
+- Recover the current task from a reopened authenticated page while the application remains open.
+
 ## Later
 
+- Extend the single-product wizard to a separately reviewed batch workflow.
+- Add an authorized Alibaba/1688 URL-to-product adapter; manual normalized JSON remains supported.
+- Add an explicit migration and reconciliation flow for old private work records.
 - Additional store and registry adapters driven by contributor demand.
 - Signed releases and a documented compatibility policy.
 

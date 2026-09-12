@@ -22,6 +22,7 @@ from .configuration import (
 )
 from .cost_formula import CostFormulaError
 from .exchange_rates import ExchangeRateService, ExchangeRatesUnavailable
+from .import_wizard import ImportWizard, ImportWizardError
 from .pricing import PricingPolicy, PricingScheme
 from .pricing_settings import PricingSettingsRepository
 from .run_history import HistoryRepository
@@ -47,6 +48,9 @@ class DashboardApplication:
         self.origin = ""
         self.exchange_rate_service = exchange_rate_service or ExchangeRateService()
         self.history = HistoryRepository(repository.directory)
+        self.imports = ImportWizard(
+            repository, secret_store, self.pricing_repository, self.history
+        )
 
     def state(self) -> dict[str, object]:
         providers = [
@@ -158,6 +162,14 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         if parsed.path == "/assets/dashboard-history.js":
             self._serve_asset("dashboard-history.js", "text/javascript; charset=utf-8")
             return
+        if parsed.path == "/assets/dashboard-import.js":
+            self._serve_asset("dashboard-import.js", "text/javascript; charset=utf-8")
+            return
+        if parsed.path.startswith("/api/imports/"):
+            if not self._authorized():
+                return
+            self._serve_import(parsed.path)
+            return
         if parsed.path == "/api/reports" or parsed.path.startswith("/api/reports/"):
             if not self._authorized():
                 return
@@ -200,6 +212,9 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         if not self._authorized():
             return
+        if parsed.path.startswith("/api/imports/"):
+            self._serve_import(parsed.path, write=True)
+            return
         if parsed.path == "/api/profiles":
             try:
                 payload = self._read_json()
@@ -238,6 +253,9 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, preview)
             return
         if parsed.path == "/api/shutdown":
+            if not self.server.application.imports.prepare_shutdown():
+                self._send_json(HTTPStatus.CONFLICT, {"error": "import_busy"})
+                return
             self._send_json(HTTPStatus.OK, {"ok": True})
             threading.Thread(target=self.server.shutdown, daemon=True).start()
             return
@@ -266,6 +284,35 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             )
             return
         self._send_json(HTTPStatus.OK, {"ok": True})
+
+    def _serve_import(self, path: str, *, write: bool = False) -> None:
+        service = self.server.application.imports
+        parts = path.removeprefix("/api/imports/").split("/")
+        try:
+            if write and parts == ["preview"]:
+                job = service.start_preview(self._read_json())
+            elif write and len(parts) == 2 and parts[1] == "draft":
+                job = service.start_draft(parts[0], self._read_json())
+            elif not write and parts == ["current"]:
+                job = service.current()
+            elif not write and len(parts) == 1:
+                job = service.get(parts[0])
+            else:
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": "import_not_found"})
+                return
+        except ImportWizardError as exc:
+            self._send_json(HTTPStatus(exc.status), {"error": exc.code})
+            return
+        except ValueError:
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "import_invalid_request"})
+            return
+        except Exception:
+            # Never return supplier responses, credential-store errors, or local paths.
+            self._send_json(
+                HTTPStatus.SERVICE_UNAVAILABLE, {"error": "import_configuration_failed"}
+            )
+            return
+        self._send_json(HTTPStatus.ACCEPTED if write else HTTPStatus.OK, {"job": job})
 
     def _serve_report(self, path: str) -> None:
         history = self.server.application.history

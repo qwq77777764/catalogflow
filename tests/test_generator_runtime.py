@@ -1,4 +1,5 @@
 import ctypes
+import json
 import subprocess
 import sys
 from contextlib import contextmanager
@@ -8,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 from catalogflow.generators import common
+from catalogflow.generators.claude_cli import ClaudeCliListingGenerator
 from catalogflow.generators.codex_cli import CodexCliError, CodexCliListingGenerator
 from catalogflow.models import Product, Variant
 from catalogflow.run_history import safe_error
@@ -149,3 +151,50 @@ def test_codex_uses_shared_external_runtime_and_structured_output(monkeypatch):
     monkeypatch.setattr("catalogflow.generators.codex_cli.run_external", runner)
     product = Product("alibaba-manual", "synthetic", "Clock", "USD", (Variant("SKU", 2),))
     assert CodexCliListingGenerator().generate(product).title == "Clock"
+
+
+@pytest.mark.parametrize("provider,cls", [
+    ("codex", CodexCliListingGenerator), ("claude", ClaudeCliListingGenerator),
+])
+def test_explicit_cli_profile_never_changes_or_inherits_other_profile_settings(
+    monkeypatch, provider, cls,
+):
+    import os
+
+    monkeypatch.setenv(f"CATALOGFLOW_{provider.upper()}_COMMAND", "wrong-profile-cli")
+    monkeypatch.setenv(f"CATALOGFLOW_{provider.upper()}_MODEL", "wrong-profile-model")
+    monkeypatch.setenv("SYNTHETIC_STORE_SECRET", "must-not-reach-child")
+    before = dict(os.environ)
+    lookups = []
+
+    def find(name, variable, *, command):
+        lookups.append(command)
+        return command or "default-cli"
+
+    def runner(command, **kwargs):
+        assert command[0] == "selected-cli"
+        assert "wrong-profile-model" not in command
+        assert "selected-model" in command
+        assert "SYNTHETIC_STORE_SECRET" not in kwargs["env"]
+        data = {"title": "Clock", "description_html": "<p>Clock</p>",
+                "category": "Clocks", "tags": ["clock"]}
+        if provider == "codex":
+            Path(command[command.index("-o") + 1]).write_text(json.dumps(data), encoding="utf-8")
+        return SimpleNamespace(returncode=0, stderr="", stdout=json.dumps({
+            "is_error": False, "structured_output": data,
+        }))
+
+    monkeypatch.setattr(f"catalogflow.generators.{provider}_cli.find_cli", find)
+    monkeypatch.setattr(f"catalogflow.generators.{provider}_cli.run_external", runner)
+    product = Product("alibaba-manual", "synthetic", "Clock", "USD", (Variant("SKU", 2),))
+    assert cls(command="selected-cli", model="selected-model").generate(product).title == "Clock"
+    assert cls(command="", model="").model is None
+    assert lookups == ["selected-cli"]
+    assert dict(os.environ) == before
+
+
+def test_explicit_empty_cli_command_uses_path_instead_of_environment_override(monkeypatch):
+    monkeypatch.setenv("SYNTHETIC_COMMAND", "wrong-profile")
+    monkeypatch.setattr(common.shutil, "which", lambda value: f"resolved-{value}")
+    assert common.find_cli("codex", "SYNTHETIC_COMMAND", command="") == "resolved-codex"
+    assert common.find_cli("codex", "SYNTHETIC_COMMAND") == "resolved-wrong-profile"

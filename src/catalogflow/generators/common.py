@@ -39,10 +39,12 @@ _PASSTHROUGH_ENV = {
 _DLL_LOCK = threading.RLock()
 
 
-def find_cli(command_name: str, override_variable: str) -> str | None:
+def find_cli(
+    command_name: str, override_variable: str, *, command: str | None = None,
+) -> str | None:
     """Find a CLI without evaluating a shell command."""
 
-    override = os.environ.get(override_variable, "").strip()
+    override = (os.environ.get(override_variable, "") if command is None else command).strip()
     if override:
         candidate = Path(override).expanduser()
         return str(candidate) if candidate.is_file() else shutil.which(override)

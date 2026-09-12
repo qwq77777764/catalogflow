@@ -193,6 +193,10 @@ class DesktopService:
         else:
             self.server.server_close()
 
+    def prepare_close(self) -> bool:
+        """Keep the workbench alive until an in-flight import has finished."""
+        return self.server.application.imports.prepare_shutdown()
+
 
 def _show_error() -> None:
     message = (
@@ -278,7 +282,19 @@ def _run_window(service: DesktopService, instance: WindowsInstance) -> None:
 
     open_button = ttk.Button(frame, command=open_interface)
     open_button.grid(row=4, column=0, sticky="ew", padx=(0, 6))
-    exit_button = ttk.Button(frame, command=root.destroy)
+    def close_window():
+        if service.prepare_close():
+            root.destroy()
+            return
+        message = (
+            "商品正在处理，请等本次预览或草稿创建完成后再退出。"
+            if language == "zh-CN" else
+            "An import is running. Wait for the preview or draft operation "
+            "to finish before exiting."
+        )
+        messagebox.showinfo("CatalogFlow", message, parent=root)
+
+    exit_button = ttk.Button(frame, command=close_window)
     exit_button.grid(row=4, column=1, sticky="ew", padx=(6, 0))
 
     def apply_language(_event=None):
@@ -312,7 +328,7 @@ def _run_window(service: DesktopService, instance: WindowsInstance) -> None:
         root.after(200, poll)
 
     chooser.bind("<<ComboboxSelected>>", apply_language)
-    root.protocol("WM_DELETE_WINDOW", root.destroy)
+    root.protocol("WM_DELETE_WINDOW", close_window)
     apply_language()
     root.after(100, open_interface)
     root.after(200, poll)
@@ -364,7 +380,7 @@ def _self_test(destination: str, *, test_keyring: bool = False) -> int:
     try:
         package = Path(__file__).parent
         assets = ("dashboard.html", "dashboard-i18n.js", "dashboard-fx.js",
-                  "dashboard-history.js", "schemas/listing.schema.json",
+                  "dashboard-history.js", "dashboard-import.js", "schemas/listing.schema.json",
                   "browser/catalogflow-collector.user.js")
         checks["assets"] = all((package / name).is_file() for name in assets)
         checks["pricing"] = PricingPolicy().price(8.5, last_mile=4.71) == 34.95
