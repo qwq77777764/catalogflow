@@ -180,6 +180,6 @@ test('all stable diagnostics have English copy and unknown raw errors are redact
     assert.ok(Object.hasOwn(translations,label),code);assert.doesNotMatch(errorText(new Error(code),i18n),/[\u4e00-\u9fff]/);
   }
   const secret='secret remote response payload';assert.ok(!errorText(new Error(secret),i18n).includes(secret));
-  assert.match(errorText(new Error('invalid_session'),i18n),/Reopen the interface from the launcher/);
-  i18n.setLocale('zh-CN');assert.match(errorText(new Error('import_store_required'),i18n),/未选择店铺/);
+  assert.match(errorText(new Error('invalid_session'),i18n),/CatalogFlow launch window, click Open interface/);
+  i18n.setLocale('zh-CN');assert.match(errorText(new Error('import_store_required'),i18n),/仅预览无需店铺连接/);
 });

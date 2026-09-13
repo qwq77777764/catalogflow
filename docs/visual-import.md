@@ -1,9 +1,14 @@
 # Visual single-product import
 
-The v0.9.0 dashboard connects product input, listing review, and an explicitly confirmed hidden
+The dashboard connects product input, listing review, and an explicitly confirmed hidden
 draft. Open it from **CatalogFlow.exe**, or run `python -m catalogflow configure`. The browser
 talks to an authenticated server bound to `127.0.0.1`; opening the application does not start a
 supplier request or store write. The toolbar switches between **中文 (CN)** and **English (US)**.
+
+In v0.10, begin with [Get started](first-run.md) to check the selected AI CLI and optionally test
+one synthetic request. The collected-product inbox hands a confirmed CJ selection to this wizard,
+or an Alibaba selection to the manual product form. The form creates the same normalized product
+input as an advanced JSON file; its costs, freight, variants and authorized facts still need review.
 
 ## Before the first preview
 
@@ -14,6 +19,7 @@ it does not ask for credentials in product JSON or listing text.
 | --- | --- |
 | CJ product URL or PID | Your saved CJ official-API profile, with authorized API access and the intended freight destination/route settings |
 | Manual product JSON | One normalized `alibaba-manual` product you are authorized to use; no supplier API required |
+| Manual product form | Enter one product's verified facts, variants, USD costs, unit freight and authorized image links; no JSON authoring required |
 | Codex or Claude | Your installed, signed-in CLI and the appropriate saved AI profile or supported local CLI configuration |
 | Template generation | No AI account or AI request; deterministic copy still needs your review |
 | Preview only | No store connection required |
@@ -114,8 +120,8 @@ See [Work reports and draft history](work-reports.md).
 ## Reopening and recovery
 
 Keep the application running during an import. Closing only the browser page does not stop its
-server. The launcher's Exit and the dashboard's stop action refuse to stop an active preview or
-draft write; wait for the task to finish. Use the launcher's **Open interface** button, or the
+server. The launcher's Exit and the dashboard's stop action refuse to stop an active AI check,
+test, preview or draft write; wait for the task to finish. Use the launcher's **Open interface** button, or the
 original CLI session URL, to reopen
 an authenticated page. The wizard can recover the server's current task or unconfirmed preview
 while that same session remains alive.
@@ -131,7 +137,8 @@ new attempt; the durable reservation is designed to block uncertain duplication.
 
 ## Current scope
 
-This release supports one CJ API product or one normalized manual JSON product per task.
+This release supports one CJ API product or one manually entered product per task. Manual entry
+uses a visual form, with normalized JSON retained as an advanced option.
 Alibaba/1688 URL normalization, batch wizard imports, WP-CLI over SSH, Shopify writes, old private
 history migration, and cross-restart restoration of unconfirmed previews are not implemented.
 The existing command-line interface remains available.
@@ -141,6 +148,10 @@ The existing command-line interface remains available.
 v0.9.0 可在浏览器里完成“选择商品 → 生成并审核 → 确认隐藏草稿”。双击 **CatalogFlow.exe**，
 或执行 `python -m catalogflow configure` 打开本机认证页面。界面支持中文 (CN) 与 English (US)。
 仅打开程序不会请求供应商商品，也不会写入店铺。
+
+v0.10 增加[首次使用引导](first-run.md#中文操作流程)、AI 状态检查和可选示例测试；已确认的采集队列
+可直接选择一件商品进入向导。CJ 自动填入链接；Alibaba 打开手动商品表单，填写事实、变体、成本、
+单位运费及授权图片，软件自动组装规范化数据，无需自行编写 JSON。高级文件入口继续保留。
 
 ### 导入前准备
 
@@ -204,7 +215,7 @@ WooCommerce Consumer Secret。无图片时可不填媒体凭据。
 
 ### 关闭页面与恢复
 
-只关闭网页不会停止服务。预览或草稿写入执行中，启动器“退出”与面板“停止”会要求等待任务完成。
+只关闭网页不会停止服务。AI 检查、小型测试、预览或草稿写入执行中，启动器“退出”与面板“停止”会要求等待任务完成。
 程序仍运行时，用启动器“打开界面”或 CLI 最初提供的会话链接重开
 认证页面，可恢复当前任务或未确认预览。页面加载后会清除地址里的令牌，普通 F5 不保证恢复认证。
 网页里未提交的编辑也不是持久化记录，重开后应重新核对文案。

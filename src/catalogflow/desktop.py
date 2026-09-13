@@ -195,7 +195,7 @@ class DesktopService:
 
     def prepare_close(self) -> bool:
         """Keep the workbench alive until an in-flight import has finished."""
-        return self.server.application.imports.prepare_shutdown()
+        return self.server.application.prepare_shutdown()
 
 
 def _show_error() -> None:
@@ -287,9 +287,9 @@ def _run_window(service: DesktopService, instance: WindowsInstance) -> None:
             root.destroy()
             return
         message = (
-            "商品正在处理，请等本次预览或草稿创建完成后再退出。"
+            "AI 检查或商品处理正在运行，请等本次操作完成后再退出。"
             if language == "zh-CN" else
-            "An import is running. Wait for the preview or draft operation "
+            "An AI check or product operation is running. Wait for it "
             "to finish before exiting."
         )
         messagebox.showinfo("CatalogFlow", message, parent=root)
@@ -380,7 +380,8 @@ def _self_test(destination: str, *, test_keyring: bool = False) -> int:
     try:
         package = Path(__file__).parent
         assets = ("dashboard.html", "dashboard-i18n.js", "dashboard-fx.js",
-                  "dashboard-history.js", "dashboard-import.js", "schemas/listing.schema.json",
+                  "dashboard-history.js", "dashboard-import.js", "dashboard-setup.js",
+                  "schemas/listing.schema.json",
                   "browser/catalogflow-collector.user.js")
         checks["assets"] = all((package / name).is_file() for name in assets)
         checks["pricing"] = PricingPolicy().price(8.5, last_mile=4.71) == 34.95

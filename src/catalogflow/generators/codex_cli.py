@@ -10,7 +10,14 @@ from pathlib import Path
 from ..media import materialize_authorized_images
 from ..models import Listing, Product
 from ..pricing import PricingPolicy, shipping_cost_for_pricing
-from .common import build_listing_prompt, find_cli, run_external, safe_cli_environment
+from .common import (
+    CliDiagnosticError,
+    build_listing_prompt,
+    cli_failure_code,
+    find_cli,
+    run_external,
+    safe_cli_environment,
+)
 
 
 class CodexCliError(RuntimeError):
@@ -77,13 +84,19 @@ class CodexCliListingGenerator:
                 timeout=self.timeout_seconds,
                 check=False,
                 env=safe_cli_environment(),
+                cwd=temp_dir,
+                max_output_bytes=512 * 1024,
             )
             if process.returncode != 0:
                 if "requires a newer version of Codex" in (process.stderr or ""):
                     raise CodexCliError("codex_cli_upgrade_required")
-                raise RuntimeError(f"Codex CLI exited with status {process.returncode}")
+                raise CliDiagnosticError(cli_failure_code(
+                    (process.stderr or "") + (process.stdout or "")
+                ))
             if not output.exists():
                 raise RuntimeError("Codex CLI did not create structured output")
+            if output.stat().st_size > 512 * 1024:
+                raise CliDiagnosticError("ai_output_limit")
             data = json.loads(output.read_text(encoding="utf-8"))
 
         prices = {

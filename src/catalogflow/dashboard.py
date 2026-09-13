@@ -13,6 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from .ai_setup import AISetup, AISetupError
 from .configuration import (
     PROVIDERS,
     ProfileRepository,
@@ -25,6 +26,7 @@ from .exchange_rates import ExchangeRateService, ExchangeRatesUnavailable
 from .import_wizard import ImportWizard, ImportWizardError
 from .pricing import PricingPolicy, PricingScheme
 from .pricing_settings import PricingSettingsRepository
+from .queue_workflow import QueueWorkflow, QueueWorkflowError
 from .run_history import HistoryRepository
 
 MAX_REQUEST_BYTES = 64 * 1024
@@ -51,6 +53,23 @@ class DashboardApplication:
         self.imports = ImportWizard(
             repository, secret_store, self.pricing_repository, self.history
         )
+        self.ai_setup = AISetup(repository)
+        self.selections = QueueWorkflow(repository.directory)
+        self._lifecycle_lock = threading.RLock()
+        self._closed = False
+
+    def prepare_shutdown(self) -> bool:
+        with self._lifecycle_lock:
+            if self.imports.busy or self.ai_setup.busy:
+                return False
+            if not self.imports.prepare_shutdown() or not self.ai_setup.prepare_shutdown():
+                return False
+            self._closed = True
+            return True
+
+    def close(self) -> None:
+        self.selections.close()
+        self.ai_setup.close()
 
     def state(self) -> dict[str, object]:
         providers = [
@@ -144,9 +163,19 @@ class DashboardServer(ThreadingHTTPServer):
         self.application = application
         super().__init__(address, DashboardRequestHandler)
 
+    def server_close(self) -> None:
+        try:
+            super().server_close()
+        finally:
+            self.application.close()
+
 
 class DashboardRequestHandler(BaseHTTPRequestHandler):
     server: DashboardServer
+
+    def setup(self) -> None:
+        super().setup()
+        self.connection.settimeout(10)
 
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
         parsed = urlparse(self.path)
@@ -164,6 +193,14 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/assets/dashboard-import.js":
             self._serve_asset("dashboard-import.js", "text/javascript; charset=utf-8")
+            return
+        if parsed.path == "/assets/dashboard-setup.js":
+            self._serve_asset("dashboard-setup.js", "text/javascript; charset=utf-8")
+            return
+        if parsed.path in {"/api/ai-setup", "/api/selection-workflow"}:
+            if not self._authorized():
+                return
+            self._serve_workflow(parsed.path)
             return
         if parsed.path.startswith("/api/imports/"):
             if not self._authorized():
@@ -212,6 +249,9 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         if not self._authorized():
             return
+        if parsed.path.startswith(("/api/ai-setup/", "/api/selection-workflow/")):
+            self._serve_workflow(parsed.path, write=True)
+            return
         if parsed.path.startswith("/api/imports/"):
             self._serve_import(parsed.path, write=True)
             return
@@ -253,8 +293,8 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, preview)
             return
         if parsed.path == "/api/shutdown":
-            if not self.server.application.imports.prepare_shutdown():
-                self._send_json(HTTPStatus.CONFLICT, {"error": "import_busy"})
+            if not self.server.application.prepare_shutdown():
+                self._send_json(HTTPStatus.CONFLICT, {"error": "workflow_busy"})
                 return
             self._send_json(HTTPStatus.OK, {"ok": True})
             threading.Thread(target=self.server.shutdown, daemon=True).start()
@@ -285,14 +325,74 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             return
         self._send_json(HTTPStatus.OK, {"ok": True})
 
+    def _serve_workflow(self, path: str, *, write: bool = False) -> None:
+        app = self.server.application
+        try:
+            payload = self._read_json() if write else None
+            with app._lifecycle_lock:
+                if write and app._closed:
+                    self._send_json(HTTPStatus.CONFLICT, {"error": "workflow_closed"})
+                    return
+                if path == "/api/ai-setup" and not write:
+                    result = app.ai_setup.state()
+                elif path == "/api/selection-workflow" and not write:
+                    result = app.selections.state()
+                elif write and path.startswith("/api/ai-setup/"):
+                    if app.imports.busy:
+                        self._send_json(HTTPStatus.CONFLICT, {"error": "import_busy"})
+                        return
+                    action = path.removeprefix("/api/ai-setup/")
+                    methods = {"check": app.ai_setup.start_check,
+                               "test": app.ai_setup.start_test,
+                               "login": app.ai_setup.start_login}
+                    if action not in methods:
+                        self._send_json(HTTPStatus.NOT_FOUND, {"error": "not_found"})
+                        return
+                    result = methods[action](payload)
+                elif write and path.startswith("/api/selection-workflow/"):
+                    action = path.removeprefix("/api/selection-workflow/")
+                    if action == "start" and not payload:
+                        result = app.selections.start()
+                    elif action == "freeze" and not set(payload) - {"queue_id"}:
+                        result = app.selections.freeze(payload)
+                    elif action == "import" and set(payload) == {"queue"}:
+                        result = app.selections.import_payload(payload["queue"])
+                    elif action == "select" and set(payload) == {"id"}:
+                        result = {"item": app.selections.select(payload["id"])}
+                    else:
+                        raise ValueError("Unsupported workflow request")
+                else:
+                    self._send_json(HTTPStatus.NOT_FOUND, {"error": "not_found"})
+                    return
+        except (AISetupError, QueueWorkflowError) as exc:
+            self._send_json(HTTPStatus(exc.status), {"error": exc.code})
+            return
+        except (TypeError, ValueError):
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "workflow_invalid_request"})
+            return
+        except Exception:
+            self._send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "workflow_unavailable"})
+            return
+        self._send_json(HTTPStatus.ACCEPTED if write else HTTPStatus.OK, result)
+
     def _serve_import(self, path: str, *, write: bool = False) -> None:
         service = self.server.application.imports
         parts = path.removeprefix("/api/imports/").split("/")
         try:
-            if write and parts == ["preview"]:
-                job = service.start_preview(self._read_json())
-            elif write and len(parts) == 2 and parts[1] == "draft":
-                job = service.start_draft(parts[0], self._read_json())
+            if write:
+                payload = self._read_json()
+                app = self.server.application
+                with app._lifecycle_lock:
+                    if app._closed or app.ai_setup.busy:
+                        self._send_json(HTTPStatus.CONFLICT, {"error": "workflow_busy"})
+                        return
+                    if parts == ["preview"]:
+                        job = service.start_preview(payload)
+                    elif len(parts) == 2 and parts[1] == "draft":
+                        job = service.start_draft(parts[0], payload)
+                    else:
+                        self._send_json(HTTPStatus.NOT_FOUND, {"error": "import_not_found"})
+                        return
             elif not write and parts == ["current"]:
                 job = service.current()
             elif not write and len(parts) == 1:
@@ -371,8 +471,10 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             raise ValueError("Content-Type must be application/json")
         try:
             payload = json.loads(self.rfile.read(length))
-        except json.JSONDecodeError as exc:
+        except (json.JSONDecodeError, UnicodeDecodeError, RecursionError) as exc:
             raise ValueError("Request body is not valid JSON") from exc
+        except (TimeoutError, OSError) as exc:
+            raise ValueError("Request body could not be read") from exc
         if not isinstance(payload, dict):
             raise ValueError("Request body must be a JSON object")
         return payload

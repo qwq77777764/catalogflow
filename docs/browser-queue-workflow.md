@@ -1,4 +1,4 @@
-# Browser-to-local-CMD queue workflow
+# Browser selection queue: desktop and CLI
 
 ## What the original workflow did
 
@@ -8,7 +8,7 @@ The private production workflow proved a useful interaction model:
 2. On a chosen product, a browser-side button sends the visible product URL, title, and authorized
    image references to a receiver bound to `127.0.0.1`.
 3. The local terminal displays the collected items.
-4. The operator presses Enter to begin the batch.
+4. The operator presses Enter to finish selection.
 5. A local Codex or Claude CLI rewrites the normalized listing.
 6. Validation and human review occur before any optional hidden draft.
 
@@ -21,38 +21,81 @@ provider's official API process. It must not crawl result pages, bypass authenti
 evade rate limits, or silently fall back to scraping. If an official API is unavailable, the operator
 must supply structured data they are authorized to use.
 
-The archived Alibaba implementation confirms that the selection control and the receiver were
-separate components. The detail-page Tampermonkey userscript displayed `Send to Alibaba CMD` and
-posted to a loopback `/add` endpoint. The Python CMD process owned the queue and waited for Enter.
-The batch launcher only started the Python receiver. The public replacement should preserve this
-division: a minimal browser collector plus a locally authenticated CatalogFlow receiver.
+The public replacement keeps the selection control separate from the local receiver. It adds
+explicit desktop actions for queue confirmation and single-product preview. In the current
+implementation, Enter or desktop queue confirmation only freezes selections; neither action
+starts the AI task.
 
 ## Current public status
 
-The hardened Alibaba selector and loopback receiver ship in v0.4.0. Start them with:
+In v0.10, the desktop's **Collected products** panel starts and controls the receiver; no command
+is needed for that path. It supports CJ product details on `www.cjdropshipping.com` and
+`cjdropshipping.com`, and Alibaba international product details on `www.alibaba.com`. It does not
+collect 1688 pages or search results. Confirmed CJ items fill the CJ import input; Alibaba items
+fill the source link, reference and title in the manual product form. The operator supplies the
+missing facts. See [First run](first-run.md).
+
+To use the desktop collector:
+
+1. Open CatalogFlow and click **Start collection**. Keep it running while selecting products.
+2. Install a compatible userscript browser extension if needed. Click **Install / update
+   collector script** and confirm installation in that extension. The EXE does not install a
+   browser extension automatically.
+3. Click **Copy pairing code**. Open a supported product detail page in the browser with the
+   script installed; reload an already-open page after installing the script if necessary.
+4. Click **Add to CatalogFlow**, inspect the URL and title in the confirmation dialog, then
+   paste the complete one-line code into the pairing prompt. Do not enter an address and token
+   separately. An accepted selection displays **Added ✓** or **Already queued**.
+5. Return to **Collected products**, inspect the list, and click **Finish and confirm collection**.
+   Choose **Use in import wizard** for a CJ item or **Fill in product details** for Alibaba.
+6. Check the source, generator, connections and product data, then click **Generate preview**.
+   Review the result before any separately confirmed hidden draft.
+
+Pairing is stored only in that product page's memory. A new tab, another newly loaded page, or a
+refresh requires pasting the code again. You can reuse the same code on several pages while the
+collector is active; after it stops, start another collection and use its new code. The code
+contains the loopback address and a collection-only token, not the dashboard's session token,
+supplier credentials or AI login. It is not saved in the queue or extension storage.
+
+## Optional command-line collector
+
+The command-line collector remains available:
 
 ```powershell
 catalogflow collect
 ```
 
 The command binds to `127.0.0.1:8766` by default, generates a fresh high-entropy token, prints the
-local userscript installation URL, and waits for Enter. The userscript runs only on
-`https://www.alibaba.com/product-detail/*`, asks for the local URL/token at runtime, and keeps the
-token only in memory for that page.
+local userscript installation URL and pairing code, and waits for Enter. The userscript runs only
+on supported CJ `/product/*` and Alibaba `/product-detail/*` detail pages. It asks for a pairing
+code on first use in each page, as described above.
 
 Each accepted payload contains exactly four fields: schema version, source, canonical product URL,
-and page title. Query strings and fragments are removed. Duplicate URLs are idempotent. The receiver
-rejects unexpected fields, cookies/authorization headers, foreign origins, non-detail URLs,
+and page title. Tracking parameters and fragments are removed; a valid CJ `pid`, `productId`, or
+`product_id` query field is retained when needed to identify the product. Duplicate canonical
+URLs from the same source are idempotent. The receiver rejects unexpected fields,
+cookies/authorization headers, foreign origins, non-detail URLs,
 credentialed URLs, bodies over 16 KiB, more than 30 requests per minute, and queues over 100 items.
-The queue is stored outside the repository with a unique session filename and restrictive
-permissions where supported.
+By default, the queue is stored in the user's configuration directory with a unique session
+filename and restrictive permissions where supported.
 
-Pressing Enter freezes the selection queue and stops the receiver. It does not yet call an AI or
-write to a store: an official provider adapter must first turn each selected identifier into the
-normalized facts/variants/images expected by the existing preview pipeline.
+Pressing Enter freezes the selection queue and stops the receiver. EOF or cancellation stops it
+without confirming the queue. Freezing does not call AI, fetch supplier facts, or write a store.
+The desktop loads saved queues when its service starts. If it was already running during a
+separate CLI collection, stop and reopen it to load that queue, or use **Already have a collection
+queue file?**. Refreshing the list alone does not rescan external queue files.
 
-The visual connection dashboard is shipped separately. It configures provider profiles and stores
-credentials safely; the collector command owns the page button and session queue.
+The queue-file input accepts version-1 or version-2 snapshots up to 48 KiB and 100 selections.
+Importing a file explicitly freezes a new copy for review; it does not process its items. This
+file records selections, not normalized product facts, and belongs in the queue input rather
+than the product JSON input. Old version-1 files found on disk have no saved confirmation flag
+and are loaded as unfinished until explicitly confirmed.
+
+The dashboard now owns an embedded collector when started there. Its close action stops that
+receiver without silently freezing unfinished selections. Persistent unfinished queues can be
+explicitly confirmed with **Confirm this unfinished queue** after reopening. Finish any current
+collection first if that button is not shown. CLI Enter remains the terminal confirmation boundary.
+Requests whose bodies arrive after collection stops are rejected instead of appending late items.
 
 The old userscripts and Python controller were not copied because they combine site-specific DOM
 selectors, browser automation, local unauthenticated endpoints, production configuration, direct
@@ -61,19 +104,22 @@ and brittle.
 
 ## Enforced design for the public bridge
 
-Any public replacement must satisfy all of these requirements before release:
+The public receiver enforces these boundaries:
 
 - bind only to `127.0.0.1`, never `0.0.0.0`;
 - generate a new high-entropy session token when the receiver starts;
-- require the token on every request and never place it in Git or browser sync storage;
+- require the collection token for the selection and queue data APIs; the userscript installation
+  URL is public on loopback and contains no token, and allowed-origin CORS preflights carry no token;
 - use exact supplier-origin allowlists, not wildcard CORS;
 - accept a small versioned JSON schema with strict body and field limits;
 - reject cookies, authorization headers, passwords, API keys, customer data, and raw HTML dumps;
-- rate-limit requests, cap queue length, and process only one explicit batch at a time;
+- rate-limit selection requests and cap each queue at 100 items; the dashboard runs one embedded
+  collector at a time and hands off one confirmed item at a time without automatic batch processing;
 - do not accept images at this selection boundary; authorized image URLs belong to the later
   official provider-normalization step and retain the existing private-network protections;
-- write the queue to an ignored local data directory with restrictive permissions;
-- make Enter an explicit processing boundary and show a preview before any store write;
+- save queue state in the local configuration directory with restrictive permissions where supported;
+- require desktop confirmation or CLI Enter to freeze selections, followed by an explicit
+  **Generate preview** action before review and any store write;
 - default to local preview and preserve the hidden-draft-only store invariant;
 - include synthetic fixtures and contract tests so contributors do not need a real supplier account.
 
@@ -90,14 +136,15 @@ Users who need those fields must obtain the relevant official API access through
 account and follow the provider's current terms, quotas, and fees. CatalogFlow will not bundle,
 share, resell, emulate, or bypass supplier credentials.
 
-## Intended complete interaction
+## Desktop interaction
 
-The future bridge should preserve the original simple experience:
+The desktop connects the selection and preview steps:
 
 ```text
-start local receiver → open authorized supplier page → add selected items
-→ review terminal queue → press Enter → generate → validate → preview
+start collection → pair on each loaded product page → select a product → finish and confirm
+→ choose one item → CJ official facts or Alibaba manual form → generate → review
 ```
 
-The first three steps now work. Official provider normalization is the next vertical slice; until it
-ships, use the normalized JSON path described in the README for generation and preview.
+CJ official normalization is supported. Alibaba/1688 automatic normalization is not: the operator
+must fill the missing authorized facts in the manual form or supply normalized JSON. There is no
+unattended batch processing or automatic store publication.

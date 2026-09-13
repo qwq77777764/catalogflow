@@ -58,10 +58,14 @@ test('provider metadata and known or unknown errors have localized display copy'
   const ui=create({languages:['zh-CN']});
   assert.equal(ui.providerText('Store URL'), '商店网址');
   assert.match(ui.errorText(new Error('invalid_session')), /本机会话/);
+  assert.match(ui.errorText(new Error('invalid_session')), /启动窗口.*打开界面.*命令行用户/);
+  assert.match(ui.errorText(new Error('workflow_busy')), /AI 检查、测试或商品处理正在运行/);
   assert.match(ui.errorText(new TypeError('Failed to fetch')), /无法连接/);
   ui.setLocale('en-US');
   assert.equal(ui.providerText('Store URL'), 'Store URL');
   assert.match(ui.errorText(new Error('invalid_session')), /session is invalid/);
+  assert.match(ui.errorText(new Error('invalid_session')), /CatalogFlow launch window.*Command-line users/);
+  assert.match(ui.errorText(new Error('workflow_busy')), /AI check, AI test, or product operation/);
   assert.match(ui.errorText(new Error('Connection profile labels must be unique')), /already exists/);
   assert.doesNotMatch(ui.errorText(new Error('unrecognized server detail')), /unrecognized server detail/);
 });

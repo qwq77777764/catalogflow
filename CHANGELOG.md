@@ -4,6 +4,24 @@ All notable changes are documented here.
 
 ## Unreleased
 
+## 0.10.0 — 2026-09-13
+
+- Added bilingual first-run guidance with selected-CLI installation and official sign-in checks,
+  user-initiated login guidance, and an optional explicitly authorized synthetic AI test. Saved
+  profiles, sign-in detection and a successful model request are reported as different states.
+- Connected browser selection to a persistent dashboard inbox. Added a narrowly matched CJ detail
+  selector alongside Alibaba, a separate collection-only pairing code, explicit queue freezing,
+  legacy queue import and single-item handoff to the existing preview wizard. Closing or cancelling
+  does not approve an unfinished queue; selection itself never invokes AI or writes a store.
+- Added manual product entry for selected Alibaba links, including facts, variants, USD costs,
+  unit freight and authorized images, while preserving the advanced JSON input. This supplies the
+  missing handoff without claiming an automatic Alibaba/1688 supplier API adapter.
+- Preserved authenticated loopback endpoints, bounded inputs, session isolation, safe diagnostics,
+  review invalidation and hidden-draft confirmation. Added the setup UI to Windows and wheel assets.
+- Fixed Claude subscription sign-in compatibility while keeping hooks, unrequested tools and MCP
+  disabled. Isolated Codex working directories and bounded external CLI output. Editing or deleting
+  an AI profile now invalidates its previous readiness result, including an in-flight check.
+
 ## 0.9.0 — 2026-09-12
 
 - Added a bilingual three-step single-product import wizard to the authenticated local dashboard:

@@ -115,7 +115,7 @@ def test_import_errors_do_not_expose_internal_details(wizard_dashboard, monkeypa
 
 def test_shutdown_is_rejected_while_import_is_running(wizard_dashboard, monkeypatch):
     monkeypatch.setattr(wizard_dashboard.imports, "prepare_shutdown", lambda: False)
-    assert request(wizard_dashboard, "/api/shutdown", {}) == (409, {"error": "import_busy"})
+    assert request(wizard_dashboard, "/api/shutdown", {}) == (409, {"error": "workflow_busy"})
     assert request(wizard_dashboard, "/api/imports/current")[0] == 200
 
 

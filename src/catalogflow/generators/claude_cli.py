@@ -10,7 +10,14 @@ from pathlib import Path
 from ..media import materialize_authorized_images
 from ..models import Listing, Product
 from ..pricing import PricingPolicy, shipping_cost_for_pricing
-from .common import build_listing_prompt, find_cli, run_external, safe_cli_environment
+from .common import (
+    CliDiagnosticError,
+    build_listing_prompt,
+    cli_failure_code,
+    find_cli,
+    run_external,
+    safe_cli_environment,
+)
 
 
 class ClaudeCliListingGenerator:
@@ -44,7 +51,12 @@ class ClaudeCliListingGenerator:
             image_paths = materialize_authorized_images(product.images, temp_dir)
             command = [
                 executable,
-                "--bare",
+                "--safe-mode",
+                "--settings",
+                '{"disableAllHooks":true}',
+                "--strict-mcp-config",
+                "--mcp-config",
+                '{"mcpServers":{}}',
                 "-p",
                 "--output-format",
                 "json",
@@ -81,12 +93,15 @@ class ClaudeCliListingGenerator:
                 check=False,
                 env=safe_cli_environment(),
                 cwd=temp_dir,
+                max_output_bytes=512 * 1024,
             )
         if process.returncode != 0:
-            raise RuntimeError(f"Claude Code CLI exited with status {process.returncode}")
+            raise CliDiagnosticError(cli_failure_code(
+                (process.stderr or "") + (process.stdout or "")
+            ))
         envelope = json.loads(process.stdout)
         if envelope.get("is_error"):
-            raise RuntimeError("Claude Code CLI returned an error result")
+            raise CliDiagnosticError(cli_failure_code(json.dumps(envelope)))
         data = envelope.get("structured_output")
         if not isinstance(data, dict):
             raise RuntimeError("Claude Code CLI did not return structured_output")
