@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import hmac
 import json
 import secrets
@@ -22,6 +23,7 @@ from .selection_queue import (
 )
 
 MAX_REQUEST_BYTES = 16 * 1024
+READ_TIMEOUT_SECONDS = 10
 RATE_LIMIT_COUNT = 30
 RATE_LIMIT_WINDOW_SECONDS = 60
 ALLOWED_FIELDS = frozenset({"version", "source", "product_url", "page_title"})
@@ -40,6 +42,22 @@ class CollectorApplication:
         self.on_selection = on_selection
         self._requests: deque[float] = deque()
         self._rate_lock = threading.Lock()
+        self._accept_lock = threading.Lock()
+        self._accepting = True
+
+    def stop_accepting(self) -> None:
+        """Revoke this collection session, including already accepted slow requests."""
+        with self._accept_lock:
+            self._accepting = False
+
+    def receive(self, selection: ProductSelection) -> tuple[ProductSelection, bool]:
+        with self._accept_lock:
+            if not self._accepting:
+                raise ValueError("collection_stopped")
+            saved, created = self.queue.add(selection)
+            if self.on_selection:
+                self.on_selection(saved, created)
+            return saved, created
 
     def allowed_page_origins(self) -> frozenset[str]:
         origins: set[str] = set()
@@ -65,9 +83,17 @@ class CollectorServer(ThreadingHTTPServer):
         self.application = application
         super().__init__(address, CollectorRequestHandler)
 
+    def server_close(self) -> None:
+        self.application.stop_accepting()
+        super().server_close()
+
 
 class CollectorRequestHandler(BaseHTTPRequestHandler):
     server: CollectorServer
+
+    def setup(self) -> None:
+        super().setup()
+        self.connection.settimeout(READ_TIMEOUT_SECONDS)
 
     def do_OPTIONS(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
         origin = self.headers.get("Origin", "")
@@ -120,7 +146,7 @@ class CollectorRequestHandler(BaseHTTPRequestHandler):
             unknown = set(payload) - ALLOWED_FIELDS
             if unknown:
                 raise ValueError("Selection contains unsupported fields")
-            if payload.get("version") != 1:
+            if type(payload.get("version")) is not int or payload["version"] != 1:
                 raise ValueError("Unsupported selection schema version")
             source = str(payload.get("source") or "")
             declared_origin = self.headers.get("X-CatalogFlow-Page-Origin", "")
@@ -128,15 +154,19 @@ class CollectorRequestHandler(BaseHTTPRequestHandler):
             if not rule or declared_origin not in rule["page_origins"]:
                 raise ValueError("Selection source does not match the page origin")
             selection = normalize_selection(
-                source,
-                str(payload.get("product_url") or ""),
-                str(payload.get("page_title") or ""),
+                source, payload.get("product_url"), payload.get("page_title"),
             )
-            saved, created = self.server.application.queue.add(selection)
-            if self.server.application.on_selection:
-                self.server.application.on_selection(saved, created)
+            parsed_selection = urlparse(selection.product_url)
+            if f"https://{parsed_selection.hostname}" != declared_origin:
+                raise ValueError("Selection URL does not match the page origin")
+            saved, created = self.server.application.receive(selection)
         except ValueError as exc:
-            self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+            stopped = str(exc) in {"queue_frozen", "collection_stopped"}
+            self._send_json(HTTPStatus.CONFLICT if stopped else HTTPStatus.BAD_REQUEST,
+                            {"error": str(exc) if stopped else "invalid_selection"})
+            return
+        except (OSError, RuntimeError):
+            self._send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "queue_unavailable"})
             return
         self._send_json(
             HTTPStatus.CREATED if created else HTTPStatus.OK,
@@ -149,7 +179,8 @@ class CollectorRequestHandler(BaseHTTPRequestHandler):
                 self._send_json(HTTPStatus.BAD_REQUEST, {"error": "forbidden_header"})
                 return False
         supplied = self.headers.get("X-CatalogFlow-Token", "")
-        if not hmac.compare_digest(supplied, self.server.application.token):
+        if not hmac.compare_digest(supplied.encode("utf-8"),
+                                   self.server.application.token.encode("utf-8")):
             self._send_json(HTTPStatus.FORBIDDEN, {"error": "invalid_session"})
             return False
         actual_origin = self.headers.get("Origin")
@@ -160,6 +191,9 @@ class CollectorRequestHandler(BaseHTTPRequestHandler):
         if require_page_origin:
             declared = self.headers.get("X-CatalogFlow-Page-Origin", "")
             if declared not in allowed:
+                self._send_json(HTTPStatus.FORBIDDEN, {"error": "invalid_page_origin"})
+                return False
+            if actual_origin and actual_origin != declared:
                 self._send_json(HTTPStatus.FORBIDDEN, {"error": "invalid_page_origin"})
                 return False
         return True
@@ -174,8 +208,11 @@ class CollectorRequestHandler(BaseHTTPRequestHandler):
         if self.headers.get_content_type() != "application/json":
             raise ValueError("Content-Type must be application/json")
         try:
-            payload = json.loads(self.rfile.read(length))
-        except json.JSONDecodeError as exc:
+            data = self.rfile.read(length)
+            if len(data) != length:
+                raise ValueError("Incomplete request body")
+            payload = json.loads(data)
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError, RecursionError) as exc:
             raise ValueError("Request body is not valid JSON") from exc
         if not isinstance(payload, dict):
             raise ValueError("Request body must be a JSON object")
@@ -197,11 +234,15 @@ class CollectorRequestHandler(BaseHTTPRequestHandler):
 
     def _send_json(self, status: HTTPStatus, payload: dict[str, object]) -> None:
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-        self.send_response(status)
-        self._security_headers("application/json; charset=utf-8", self.headers.get("Origin"))
-        self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
+        try:
+            self.send_response(status)
+            self._security_headers("application/json; charset=utf-8", self.headers.get("Origin"))
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+        except OSError:
+            # The browser may have disconnected while a bounded request was being read.
+            self.close_connection = True
 
     def _security_headers(self, content_type: str, origin: str | None = None) -> None:
         self.send_header("Content-Type", content_type)
@@ -213,10 +254,14 @@ class CollectorRequestHandler(BaseHTTPRequestHandler):
             "Content-Security-Policy",
             "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
         )
-        # Never reflect a request header. This literal is the only browser origin
-        # supported by the first public collector and prevents response splitting.
-        if origin == "https://www.alibaba.com":
-            self.send_header("Access-Control-Allow-Origin", "https://www.alibaba.com")
+        # Only fixed literal origins, never an unchecked request-header reflection.
+        cors_origins = {
+            "https://www.alibaba.com": "https://www.alibaba.com",
+            "https://www.cjdropshipping.com": "https://www.cjdropshipping.com",
+            "https://cjdropshipping.com": "https://cjdropshipping.com",
+        }
+        if origin in cors_origins:
+            self.send_header("Access-Control-Allow-Origin", cors_origins[origin])
             self.send_header("Vary", "Origin")
 
     def log_message(self, _format: str, *_args: object) -> None:
@@ -249,18 +294,29 @@ def run_collector(*, port: int = 8766) -> None:
     thread.start()
     print(f"CatalogFlow collector: {base_url}")
     print(f"Install/update userscript: {base_url}/collector.user.js")
-    print(f"Session token (enter only in the userscript prompt): {application.token}")
+    print("Pairing code (paste only in the userscript): "
+          + pairing_code(base_url, application.token))
     print(f"Local queue file (created on first selection): {queue.path}")
     try:
         input("Select products in the browser, then press Enter here to freeze the queue.\n")
+        if queue.list():
+            queue.freeze()
     except (EOFError, KeyboardInterrupt):
         pass
     finally:
+        application.stop_accepting()
         server.shutdown()
         server.server_close()
         thread.join(timeout=2)
     item_count = len(queue.list())
     if item_count:
-        print(f"Queue frozen with {item_count} item(s): {queue.path}")
+        state = "frozen" if queue.frozen else "stopped; explicit freeze still required"
+        print(f"Queue {state} with {item_count} item(s): {queue.path}")
     else:
         print("Queue frozen with 0 items; no queue file was created.")
+
+
+def pairing_code(endpoint: str, token: str) -> str:
+    """One in-memory paste value; never store this code in a queue or log artifact."""
+    encoded = json.dumps({"endpoint": endpoint, "token": token}, separators=(",", ":"))
+    return "CATALOGFLOW1:" + base64.urlsafe_b64encode(encoded.encode("ascii")).decode().rstrip("=")

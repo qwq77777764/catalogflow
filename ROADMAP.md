@@ -21,7 +21,6 @@ CatalogFlow is developed in small, auditable vertical slices.
 
 ## Next
 
-- Connect a narrowly scoped CJ browser selector or frozen queue to the same adapter.
 - Add variant-level inventory origin selection instead of the current explicit/default origin.
 - Add a review UI for comparing returned logistics routes before choosing one.
 
@@ -70,6 +69,15 @@ CatalogFlow is developed in small, auditable vertical slices.
   pricing instead of rerunning supplier retrieval, AI generation, or pricing.
 - Run one background task per dashboard session and reuse existing reports and duplicate guards.
 - Recover the current task from a reopened authenticated page while the application remains open.
+
+## Shipped in 0.10 — First-run guidance and collected-product handoff
+
+- Distinguish an installed CLI, detected sign-in and an explicitly tested AI request.
+- Guide official installation/sign-in and offer a small optional synthetic AI test.
+- Pair a CJ/Alibaba browser selector with the desktop and show selections in a persistent inbox.
+- Require explicit collection confirmation before handing one item to the preview wizard.
+- Offer a manual product form for Alibaba selections without requiring handwritten JSON.
+- Keep developer acceptance tests independent of personal supplier and store credentials.
 
 ## Later
 

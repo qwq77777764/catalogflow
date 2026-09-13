@@ -57,7 +57,11 @@ def test_claude_generator_reads_structured_output(monkeypatch) -> None:
 
     assert listing.title == "Minimal USB Desk Clock"
     assert listing.prices == {"SKU-1": 9.95}
-    assert "--bare" in captured["command"]
+    assert "--safe-mode" in captured["command"]
+    assert "--bare" not in captured["command"]
+    assert '{"disableAllHooks":true}' in captured["command"]
+    assert "--strict-mcp-config" in captured["command"]
+    assert '{"mcpServers":{}}' in captured["command"]
     assert "--no-session-persistence" in captured["command"]
     assert captured["command"][captured["command"].index("--tools") + 1] == ""
     assert "mcp__*" in captured["command"]

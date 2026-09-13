@@ -44,6 +44,40 @@
       padding:9px 15px; border-radius:999px; font-weight:750; text-decoration:none; }
     #pricing-title, #connections, #history-title, #import-title { scroll-margin-top:80px; }
     .import-panel { margin-bottom:22px; overflow-wrap:anywhere; }
+    #setup-title, #selection-inbox { scroll-margin-top:80px; }
+    .setup-panel { margin-bottom:22px; overflow-wrap:anywhere; }
+    .setup-intro { color:var(--muted); margin:8px 0 18px; max-width:800px; }
+    .setup-section { padding-top:18px; margin-top:18px; border-top:1px solid var(--line); }
+    .setup-section h3, .setup-item h4 { margin:0 0 12px; }
+    .setup-controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .setup-controls .field { min-width:0; display:flex; flex-direction:column; }
+    .setup-controls label { flex:1; }
+    .setup-controls select { height:50px; }
+    .setup-actions { display:flex; align-items:center; flex-wrap:wrap; gap:10px 16px; margin:14px 0; }
+    .setup-actions a, .setup-item a { color:var(--green); }
+    .setup-status { font-weight:750; color:var(--green); }
+    .setup-small-test, .setup-pairing, .import-manual { padding:16px; border:1px solid var(--line); border-radius:14px; margin:18px 0; background:#f6f8f6; }
+    .setup-small-test h4 { margin-top:0; }
+    #setup-pairing-code { min-height:82px; font:12px/1.5 ui-monospace,Consolas,monospace; overflow-wrap:anywhere; }
+    .setup-instructions { padding-left:23px; }
+    .setup-instructions li { margin:8px 0; }
+    .setup-items { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:18px; }
+    .setup-item { border:1px solid var(--line); border-radius:14px; padding:16px; min-width:0; }
+    .setup-item a { font-size:13px; }
+    .setup-item button { margin-right:8px; margin-top:8px; }
+    .setup-section details { margin-top:18px; }
+    .setup-section summary { cursor:pointer; font-weight:750; }
+    .setup-section details .field { margin-top:14px; }
+    .import-manual-variants { margin:16px 0; }
+    .import-manual-variant { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; border-top:1px solid var(--line); padding-top:16px; margin-top:16px; }
+    .import-manual-variant .field { min-width:0; }
+    .import-manual-variant button { align-self:end; }
+    @media(max-width:520px) {
+      .setup-panel { padding:18px; }
+      .setup-controls, .setup-items, .import-manual-variant { grid-template-columns:1fr; }
+      .setup-actions button { width:100%; }
+      .setup-small-test, .setup-pairing, .import-manual { padding:12px; }
+    }
     .import-intro { color:var(--muted); max-width:760px; margin:8px 0 18px; }
     .import-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; padding:0; list-style:none; }
     .import-steps li { border-radius:10px; padding:10px 12px; background:var(--green2); color:var(--green); font-weight:750; }
@@ -298,7 +332,8 @@
       <div class="flow-step"><b>04 · REVIEW</b><span>审核后存草稿</span></div>
       <p class="flow-note">不是批量爬虫：不遍历站点、不绕过登录或限流。正式供应商适配器只使用操作者自行申请并获准使用的官方 API；本地 AI 需要已有登录与可用额度。</p>
     </div>
-    <nav class="section-nav" aria-label="面板导航"><a href="#import-title">商品搬运</a><a href="#connections">连接档案</a><a href="#pricing-title">定价工作台 ↓</a><a href="#history-title">工作记录</a></nav>
+    <nav class="section-nav" aria-label="面板导航"><a href="#setup-title">新手开始</a><a href="#selection-inbox">已采集商品</a><a href="#import-title">商品搬运</a><a href="#connections">连接档案</a><a href="#pricing-title">定价工作台 ↓</a><a href="#history-title">工作记录</a></nav>
+    <section id="guided-setup" class="panel setup-panel" aria-labelledby="setup-title"></section>
     <section id="product-import" class="panel import-panel" aria-labelledby="import-title"></section>
     <main class="grid" id="connections">
       <section class="panel">
@@ -462,6 +497,7 @@ B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最�
   <script src="/assets/dashboard-fx.js"></script>
   <script src="/assets/dashboard-history.js"></script>
   <script src="/assets/dashboard-import.js"></script>
+  <script src="/assets/dashboard-setup.js"></script>
   <script>
     const token = new URLSearchParams(location.hash.slice(1)).get('token') || '';
     history.replaceState(null, '', location.pathname);
@@ -471,6 +507,7 @@ B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最�
     let freightConverter = null;
     let historyViewer = null;
     let importWizard = null;
+    let setupWizard = null;
     const $ = id => document.getElementById(id);
     const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
     let languageStorage;
@@ -749,6 +786,7 @@ B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最�
       $('provider').innerHTML=providerOptions();
       renderProviderFields(); renderProfiles();
       importWizard?.refreshProfiles();
+      setupWizard?.refreshProfiles();
       if (!pricingReady) {
         state.pricing = incoming.pricing;
         state.pricing_defaults = incoming.pricing_defaults;
@@ -759,14 +797,14 @@ B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最�
         freightConverter=CatalogFlowFX.mount({container:$('fx-converter'),amountInput:$('preview-last-mile'),i18n,loadRates:()=>api('/api/exchange-rates')});
       }
     }
-    async function removeProfile(id) { if(!confirm(t('删除这个连接档案和它保存在系统凭据库中的密钥？')))return; try{await api('/api/profiles/'+encodeURIComponent(id),{method:'DELETE'}); toast(()=>t('连接已删除')); await refresh(); resetForm();}catch(error){toast(()=>errorText(error),true);} }
+    async function removeProfile(id) { if(!confirm(t('删除这个连接档案和它保存在系统凭据库中的密钥？')))return; try{await api('/api/profiles/'+encodeURIComponent(id),{method:'DELETE'}); toast(()=>t('连接已删除')); setupWizard?.invalidateAI(); importWizard?.invalidateInputs(); await refresh(); resetForm();}catch(error){toast(()=>errorText(error),true);} }
     $('profile-form').onsubmit=async event=>{event.preventDefault();
       if (!$('label').value.trim() || !$('label').validity.valid) { toast(()=>t('请填写连接名称（1–80 个字符）。'),true); $('label').focus(); return; }
       const invalidUrl=Array.from(document.querySelectorAll('#dynamic-fields input[type="url"]')).find(input=>!input.validity.valid);
       if (invalidUrl) { toast(()=>t('请检查「{label}」的网址格式。',{label:document.querySelector('label[for="'+invalidUrl.id+'"]').textContent}),true); invalidUrl.focus(); return; }
       const values={}, secrets={}; document.querySelectorAll('#dynamic-fields input').forEach(input=>{if(input.value.trim())(input.dataset.secret==='true'?secrets:values)[input.dataset.name]=input.value.trim();});
       const payload={id:$('profile-id').value||null,provider:$('provider').value,label:$('label').value,notes:$('notes').value,is_default:$('is-default').checked,values,secrets};
-      try{await api('/api/profiles',{method:'POST',body:JSON.stringify(payload)}); toast(()=>t('连接已安全保存')); await refresh(); resetForm();}catch(error){toast(()=>errorText(error),true);} };
+      try{await api('/api/profiles',{method:'POST',body:JSON.stringify(payload)}); toast(()=>t('连接已安全保存')); setupWizard?.invalidateAI(); importWizard?.invalidateInputs(); await refresh(); resetForm();}catch(error){toast(()=>errorText(error),true);} };
     $('pricing-form').addEventListener('input', event => {
       if(event.target.closest('#fx-converter')) return;
       if(event.target.id === 'cost-formula') formulaSyntaxIssue=null;
@@ -803,7 +841,7 @@ B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最�
         renderSaveError();
       } finally { pricingSaving=false; updatePricingControls(); }
     };
-    window.addEventListener('beforeunload', event=> { if (pricingIsDirty() || pricingSaving || importWizard?.havePendingChanges() || importWizard?.processing()) { event.preventDefault(); event.returnValue=''; } });
+    window.addEventListener('beforeunload', event=> { if (pricingIsDirty() || pricingSaving || importWizard?.havePendingChanges() || importWizard?.processing() || setupWizard?.processing()) { event.preventDefault(); event.returnValue=''; } });
     $('provider').onchange=()=>renderProviderFields(); $('cancel-edit').onclick=resetForm;
     $('ui-language').onchange=()=> {
       i18n.setLocale($('ui-language').value);
@@ -814,15 +852,18 @@ B：max(商品成本公式结果 + 运费 + 预估税费 + 固定支付费, 最�
       freightConverter?.localize();
       historyViewer?.localize();
       importWizard?.localize();
+      setupWizard?.localize();
     };
     $('stop').onclick=async()=>{try{await api('/api/shutdown',{method:'POST',body:'{}'}); document.body.innerHTML=`<div class="shell"><section class="panel"><h1>${esc(t('面板已停止'))}</h1><p>${esc(t('可以关闭这个页面。'))}</p></section></div>`;}catch(error){toast(()=>errorText(error),true);}};
     translateStaticCopy();
     historyViewer=CatalogFlowHistory.mount({container:$('work-history'),i18n,api});
     importWizard=CatalogFlowImport.mount({container:$('product-import'),i18n,api,getProfiles:()=>state.profiles,
+      onStateChange:()=>setupWizard?.refreshControls(),
       pricingIsDirty:()=>!pricingReady || pricingSaving || pricingIsDirty(),onHistoryRefresh:async runId=>{
         await historyViewer.refresh();
         if (runId) $('history-toggle-'+runId)?.click();
       }});
+    setupWizard=CatalogFlowSetup.mount({container:$('guided-setup'),i18n,api,getProfiles:()=>state.profiles,importWizard});
     refresh().catch(error=>toast(()=>t('无法打开配置：{error}', {error:errorText(error)}),true));
   </script>
 </body>

@@ -20,7 +20,7 @@ python -m catalogflow configure
 
 CatalogFlow chooses an available local port, opens the default browser, and prints a one-time URL.
 The server binds only to `127.0.0.1`. Close it with the page's stop button or `Ctrl+C`.
-The stop button refuses to shut down an active import; wait for the preview or draft result first.
+The stop button refuses to shut down an active AI check, test or import; wait for that operation to finish.
 
 Useful options:
 
@@ -69,6 +69,13 @@ This viewer does not start an import, publish a product, or import an old privat
 empty history means no reports exist in this configuration directory. See [Work reports](work-reports.md).
 
 ## Visual product import
+
+The first-run panel checks a selected AI CLI's installation and official login status, provides
+installation/login guidance, and offers an explicitly triggered synthetic model test. Merely saving
+an AI profile does not prove authentication or model availability. The collected-product inbox
+requires explicit freeze/confirmation before handing one CJ link or Alibaba manual entry to the
+wizard. A manual product form builds normalized data without JSON authoring. See
+[First run](first-run.md) for the beginner path; it does not require a developer's personal store.
 
 The import wizard accepts one CJ URL/PID through a saved CJ profile, or one operator-supplied
 normalized JSON file (`alibaba-manual`, UTF-8 with optional BOM, maximum 48 KiB). Select a generator
@@ -343,7 +350,7 @@ This is not unattended magic: the local AI CLI must already be signed in and hav
 available. If generation fails or quota is exhausted, CatalogFlow must stop with an explicit error;
 it must never silently publish the supplier's original duplicate content.
 
-CatalogFlow is official-API-first, not a bulk crawler. A future browser selector may submit a chosen
+CatalogFlow is official-API-first, not a bulk crawler. The browser selector submits a chosen
 product identifier or URL, but it must not enumerate a marketplace, bypass authentication, CAPTCHA,
 access controls, or rate limits. Without authorized official API access, the accepted fallback is
 operator-supplied structured data.

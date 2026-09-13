@@ -20,7 +20,7 @@
     import_revision_mismatch:'预览或连接已变更，请重新生成预览后审核。',
     import_configuration_failed:'连接配置未能加载，请检查档案和系统凭据库。',
     import_reports_unavailable:'无法保存工作记录，请检查本机报告目录后重试。',
-    import_store_required:'此预览未选择店铺。请配置店铺连接并重新预览。',
+    import_store_required:'仅预览无需店铺连接。如需创建隐藏草稿，请选择店铺并重新生成预览。',
     import_not_ready:'请先完成预览并审核，再创建隐藏草稿。',
     import_review_required:'请勾选已审核商品内容与价格。',
     import_stale_preview:'预览或连接已变更，请重新生成预览后审核。',
@@ -34,7 +34,6 @@
   });
   function errorText(error,i18n) {
     const code=typeof error==='string' ? error : error?.message;
-    if(code==='invalid_session')return i18n.t('本机会话已失效，请从启动器重新打开界面。当前运行的服务仍保留已生成的任务。');
     if (Object.hasOwn(diagnosticLabels,code)) return i18n.t(diagnosticLabels[code]);
     if (root.CatalogFlowHistory) {
       const label=root.CatalogFlowHistory.diagnosticText(code,i18n);
@@ -185,10 +184,45 @@
     const variants=Array.isArray(product.variants) ? product.variants : [];
     return [...new Set([...gallery,...variants.map(variant=>variant?.image_url)].filter(url=>typeof url==='string' && url.length>0))];
   }
-  function mount({container,i18n,api,getProfiles=()=>[],pricingIsDirty=()=>false,onHistoryRefresh=()=>{}}) {
+  function manualProductPayload(form) {
+    const text=value=>String(value ?? '').trim(),sourceId=text(form.source_id),title=text(form.title),url=text(form.source_url);
+    if(!sourceId || sourceId.length>200 || !title || title.length>500 || url && !safeLink(url))throw new Error('import_invalid_product');
+    const images=[...new Set(text(form.images).split(/\r?\n/).map(text).filter(Boolean))];
+    if(images.length>20 || images.some(url=>!safeLink(url)))throw new Error('import_invalid_product');
+    const pairs=text(form.facts).split(/\r?\n/).filter(line=>line.trim()).map(line=>{
+      const match=line.match(/^([^:：]+)[:：](.*)$/);if(!match)throw new Error('import_invalid_product');
+      const key=match[1].trim(),value=match[2].trim();if(!key || key.length>100 || value.length>2000)throw new Error('import_invalid_product');return [key,value];
+    });
+    if(pairs.length>50 || new Set(pairs.map(([key])=>key)).size!==pairs.length)throw new Error('import_invalid_product');
+    const origin=text(form.origin_country).toUpperCase(),destination=text(form.destination_country).toUpperCase();
+    if(!/^[A-Z]{2}$/.test(origin) || !/^[A-Z]{2}$/.test(destination) || !Array.isArray(form.variants) || !form.variants.length || form.variants.length>100)
+      throw new Error('import_invalid_product');
+    const variants=form.variants.map((row,index)=>{
+      const amount=value=>{if(text(value)==='')throw new Error('import_invalid_product');const number=Number(value);
+        if(!Number.isFinite(number) || number<0 || number>1000000)throw new Error('import_invalid_product');return number;};
+      const name=text(row.name),image=text(row.image_url),sku=text(row.sku) || 'manual-'+(index+1);
+      if(sku.length>200 || name.length>200 || image && !safeLink(image))throw new Error('import_invalid_product');
+      if(form.variants.length>1 && !name)throw new Error('import_invalid_product');
+      return {sku,cost:amount(row.cost),attributes:name?{Option:name}:{},image_url:image,
+        shipping_quote:{origin_country:origin,destination_country:destination,quantity:1,method:'Manual quote',total_cost_usd:amount(row.shipping_cost),estimated_days:''}};
+    });
+    if(new Set(variants.map(row=>row.sku)).size!==variants.length || new Set(variants.map(row=>row.attributes.Option)).size!==variants.length)
+      throw new Error('import_invalid_product');
+    const result={source:'alibaba-manual',source_id:sourceId,source_url:url,title,currency:'USD',facts:Object.fromEntries(pairs),images,variants};
+    if(productImages(result).length>20)throw new Error('import_invalid_product');
+    if(new TextEncoder().encode(JSON.stringify(result)).length>MAX_JSON_BYTES)throw new Error('import_json_too_large');
+    return result;
+  }
+  function manualFormForItem(item={}) {
+    let sourceId=item.id || '';
+    try{sourceId=new URL(item.url).pathname.match(/\d{5,}/)?.[0] || sourceId;}catch(_){}
+    return {source_url:item.url || '',source_id:sourceId,title:item.title || '',facts:'',images:'',origin_country:'CN',destination_country:'US',
+      variants:[{name:'',sku:'',cost:'',shipping_cost:'',image_url:''}]};
+  }
+  function mount({container,i18n,api,getProfiles=()=>[],pricingIsDirty=()=>false,onHistoryRefresh=()=>{},onStateChange=()=>{}}) {
     const doc=container.ownerDocument,model=createModel(api,{pricingIsDirty});
     const t=(source,params)=>i18n.t(source,params),el=id=>doc.getElementById(id),localized=[];
-    let pollTimer=null,renderedPreviewId=null,finishedKey=null,profileSignature=null,fileData=null;
+    let pollTimer=null,renderedPreviewId=null,finishedKey=null,profileSignature=null,fileData=null,generatorChanged=()=>{},externalBusy=false;
     function node(tag,text='',className='') {
       const value=doc.createElement(tag); value.textContent=String(text ?? ''); if(className)value.className=className; return value;
     }
@@ -209,7 +243,7 @@
     const controls=node('fieldset'); controls.id='import-inputs';
     const grid=node('div','','import-controls');
     const source=field('import-source','商品来源','select');
-    option(source.input,'cj','CJdropshipping'); option(source.input,'alibaba-manual',t('手动商品 JSON'));
+    option(source.input,'cj','CJdropshipping'); option(source.input,'alibaba-manual',t('手动填写商品 / JSON'));
     const reference=field('import-reference','CJ 商品链接 / 产品 ID'); reference.input.maxLength=2048;
     const file=field('import-file','规范化商品 JSON（最多 48 KiB）'); file.input.type='file'; file.input.accept='.json,application/json';
     file.wrapper.id='import-file-field'; file.wrapper.hidden=true; reference.wrapper.id='import-reference-field';
@@ -220,6 +254,10 @@
     const store=field('import-store-profile','目标 WooCommerce 店铺（可选）','select');
     grid.append(source.wrapper,reference.wrapper,file.wrapper,cj.wrapper,generator.wrapper,ai.wrapper,store.wrapper);
     controls.append(grid);
+    const manualMode=field('import-manual-mode','商品资料填写方式','select');
+    option(manualMode.input,'form',t('直接填写表单'));option(manualMode.input,'json',t('高级：导入规范化 JSON'));
+    manualMode.wrapper.hidden=true;controls.append(manualMode.wrapper);
+    const manual=elementManualForm();controls.append(manual.box);
     const fileNote=node('p','','hint'); fileNote.id='import-file-status'; controls.append(fileNote);
     const disclosure=copy('p','点击生成预览，即允许所选 AI 处理这个商品已获授权的事实与图片。成本、来源 ID 和店铺密钥不会发送给 AI。','warning');
     disclosure.id='import-ai-disclosure'; controls.append(disclosure);
@@ -258,11 +296,11 @@
     review.append(copy('p','供应商运费按报价总额 ÷ 数量显示。最终售价使用实际商品成本、供应商运费和已保存的定价费用；不使用下方试算成本。','hint'));
     const policy=node('details'); policy.append(copy('summary','本次定价设置快照')); const policyFacts=node('dl','','history-facts'); policyFacts.id='import-pricing-snapshot'; policy.append(policyFacts); review.append(policy);
     const draftSection=node('div','','import-draft'); draftSection.append(copy('h3','3. 创建隐藏草稿'));
-    const noStore=copy('p','此预览未选择店铺。请配置店铺连接并重新预览。','warning'); noStore.id='import-no-store'; draftSection.append(noStore);
+    const noStore=copy('p','仅预览无需店铺连接。如需创建隐藏草稿，请选择店铺并重新生成预览。','hint'); noStore.id='import-no-store'; draftSection.append(noStore);
     const check=node('label','','check'); const checkInput=node('input'); checkInput.type='checkbox'; checkInput.id='import-reviewed';
     checkInput.onchange=()=> { model.reviewed=checkInput.checked; renderControls(); };
     check.append(checkInput,copy('span','我已审核标题、描述、图片、变体与 USD 价格，同意创建隐藏草稿。')); draftSection.append(check);
-    const draft=button('import-draft','创建隐藏草稿',()=>model.draft(render),'primary'); draftSection.append(draft);
+    const draft=button('import-draft','创建隐藏草稿',()=>{if(!externalBusy)model.draft(render);},'primary'); draftSection.append(draft);
     draftSection.append(copy('p','只创建 draft + hidden 草稿，不公开发布。使用本次已审核预览，不会再次调用 AI。','hint'));
     review.append(draftSection); container.append(review);
     const result=node('section','','import-result'); result.id='import-result'; result.hidden=true; container.append(result);
@@ -289,13 +327,17 @@
     }
     function sourceFields() {
       const manual=source.input.value==='alibaba-manual',template=generator.input.value==='deterministic';
-      file.wrapper.hidden=!manual; reference.wrapper.hidden=manual; cj.wrapper.hidden=manual;
+      file.wrapper.hidden=!manual || manualMode.input.value!=='json'; reference.wrapper.hidden=manual; cj.wrapper.hidden=manual;
+      manualMode.wrapper.hidden=!manual;
+      el('import-manual-form').hidden=!manual || manualMode.input.value!=='form';
       ai.wrapper.hidden=template; disclosure.hidden=template; templateNote.hidden=!template;
       refreshProfiles(true);
     }
-    source.input.onchange=sourceFields; generator.input.onchange=sourceFields;
+    source.input.onchange=sourceFields; manualMode.input.onchange=sourceFields;
+    generator.input.onchange=()=>{sourceFields();generatorChanged(generator.input.value,ai.input.value || null);};
+    ai.input.onchange=()=>generatorChanged(generator.input.value,ai.input.value || null);
     for(const eventName of ['input','change']) controls.addEventListener(eventName,event=>{
-      if(event.target.matches('input,select')) {model.inputChanged();render();}
+      if(event.target.matches('input,select,textarea')) {model.inputChanged();render();}
     });
     file.input.onchange=async()=> {
       fileData=null; model.error=null; const selected=file.input.files?.[0];
@@ -308,9 +350,41 @@
       } catch(error) { if(file.input.files?.[0]!==selected)return; model.error=error; fileNote.textContent=''; }
       render();
     };
-    form.onsubmit=event=> { event.preventDefault(); model.start({source:source.input.value,
-      source_input:source.input.value==='cj' ? reference.input.value : fileData,source_profile_id:cj.input.value,
-      generator:generator.input.value,ai_profile_id:ai.input.value,store_profile_id:store.input.value},render); };
+    form.onsubmit=event=> {event.preventDefault();if(externalBusy)return;let sourceInput;
+      try{sourceInput=source.input.value==='cj'?reference.input.value:manualMode.input.value==='form'?manualProductPayload(manual.read()):fileData;}
+      catch(error){model.inputChanged();model.error=error;render();return;}
+      model.start({source:source.input.value,source_input:sourceInput,source_profile_id:cj.input.value,
+        generator:generator.input.value,ai_profile_id:ai.input.value,store_profile_id:store.input.value},render);
+    };
+    function elementManualForm() {
+      const box=node('div','','import-manual');box.id='import-manual-form';box.hidden=true;
+      box.append(copy('p','填写你已获授权并核实的商品资料。金额统一为 USD，每个变体填写单件运费；此表单不会抓取商品网页。','hint'));
+      const fields={},grid=node('div','','import-edit-grid');
+      for(const [key,label,tag,max] of [['source_url','原商品链接','input',2048],['source_id','商品编号（用于识别重复商品）','input',200],
+        ['title','来源商品标题','input',500],['origin_country','发货国家代码','input',2],['destination_country','收货国家代码','input',2],
+        ['facts','已核实的事实（每行 名称: 内容）','textarea',12000],['images','授权图片 HTTPS 链接（每行一条）','textarea',20000]]) {
+        const item=field('import-manual-'+key,label,tag);item.input.maxLength=max;fields[key]=item.input;
+        if(tag==='textarea')item.wrapper.classList.add('import-full');grid.append(item.wrapper);
+      }
+      fields.origin_country.value='CN';fields.destination_country.value='US';
+      fields.source_url.onchange=()=>{if(!fields.source_id.value){try{const id=new URL(fields.source_url.value).pathname.match(/\d{5,}/)?.[0];if(id)fields.source_id.value=id;}catch(_){}}};
+      box.append(grid,copy('p','例如 Material: Wood、Dimensions: 30 × 30 cm。只填写已核实信息；未知内容留空。多属性变体可使用高级 JSON。','hint'));
+      const rows=node('div','','import-manual-variants');rows.id='import-manual-variants';box.append(rows);
+      let count=0;
+      function addVariant() {
+        if(rows.children.length>=100)return;const row=node('div','','import-manual-variant');const values={};
+        for(const [key,label] of [['name','变体名称（单规格可留空）'],['sku','变体 SKU（可留空自动编号）'],['cost','商品成本（USD / 件）'],['shipping_cost','运费（USD / 件，确认为零时填 0）'],['image_url','该变体图片 HTTPS 链接（可选）']]) {
+          const item=field('import-manual-variant-'+count+'-'+key,label);values[key]=item.input;item.input.dataset.manualVariant=key;
+          if(['cost','shipping_cost'].includes(key)){item.input.type='number';item.input.min='0';item.input.max='1000000';item.input.step='any';}
+          else item.input.maxLength=key==='image_url'?2048:200;row.append(item.wrapper);
+        }
+        const remove=button('import-manual-remove-'+count,'删除这个变体',()=>{if(rows.children.length<=1)return;row.remove();model.inputChanged();render();});row.append(remove);rows.append(row);count++;
+      }
+      const add=button('import-manual-add','增加一个变体',()=>{addVariant();model.inputChanged();render();});box.append(add);addVariant();
+      return {box,fields,reset:item=>{const clean=manualFormForItem(item);for(const [key,input] of Object.entries(fields))input.value=clean[key];rows.replaceChildren();addVariant();},
+        read:()=>({...Object.fromEntries(Object.entries(fields).map(([key,input])=>[key,input.value])),
+        variants:[...rows.children].map(row=>Object.fromEntries([...row.querySelectorAll('[data-manual-variant]')].map(input=>[input.dataset.manualVariant,input.value])))} )};
+    }
     function renderPreview() {
       const preview=model.job?.preview; review.hidden=!preview;
       if(!preview)return;
@@ -354,11 +428,11 @@
       }
     }
     function renderControls() {
-      controls.disabled=model.busy || model.active || model.uncertain;
-      previewButton.disabled=model.busy || model.active || model.uncertain;
-      el('import-reviewed').disabled=model.job?.status!=='ready' || !model.job?.preview?.store || model.busy || model.uncertain || model.previewInvalidated;
+      controls.disabled=model.busy || model.active || model.uncertain || externalBusy;
+      previewButton.disabled=model.busy || model.active || model.uncertain || externalBusy;
+      el('import-reviewed').disabled=model.job?.status!=='ready' || !model.job?.preview?.store || model.busy || model.uncertain || model.previewInvalidated || externalBusy;
       el('import-reviewed').checked=model.reviewed;
-      draft.disabled=!model.canDraft;
+      draft.disabled=!model.canDraft || externalBusy;
       for(const key of Object.keys(model.edits))el('import-edit-'+key).disabled=model.job?.status!=='ready' || model.busy || model.previewInvalidated;
       noStore.hidden=Boolean(model.job?.preview?.store);
       stalePreview.hidden=!model.previewInvalidated;
@@ -394,6 +468,7 @@
       clearTimeout(pollTimer);
       if(model.uncertain)pollTimer=setTimeout(()=>model.recover(render),1800);
       else if(model.active)pollTimer=setTimeout(()=>model.poll(render),1500);
+      onStateChange();
     }
     async function downloadReport() {
       const runId=model.job?.report_run_id;if(!validId(runId))return;
@@ -408,16 +483,31 @@
     }
     function localize() {
       for(const {value,source} of localized)value.textContent=t(source);
-      source.input.options[1].textContent=t('手动商品 JSON');generator.input.options[2].textContent=t('本机模板（无需 AI）');
+      source.input.options[1].textContent=t('手动填写商品 / JSON');generator.input.options[2].textContent=t('本机模板（无需 AI）');
+      manualMode.input.options[0].textContent=t('直接填写表单');manualMode.input.options[1].textContent=t('高级：导入规范化 JSON');
       if(fileData && file.input.files?.[0])fileNote.textContent=t('已读取文件：{name}',{name:file.input.files[0].name});
       refreshProfiles(true);render();
     }
     sourceFields();model.recover(render);
     return {model,localize,refreshProfiles,refresh:()=>model.recover(render),dispose:()=>clearTimeout(pollTimer),
+      setExternalBusy:value=>{externalBusy=Boolean(value);renderControls();},
+      invalidateInputs:()=>{model.inputChanged();render();},
+      onGeneratorChange:callback=>{generatorChanged=callback;callback(generator.input.value,ai.input.value || null);},
+      selectGenerator:(value,profileId=null)=>{
+        if(!['codex','claude','deterministic'].includes(value) || model.active || model.busy || model.uncertain || externalBusy)return false;
+        if(generator.input.value===value && (ai.input.value || null)===profileId)return true;
+        generator.input.value=value;sourceFields();ai.input.value=profileId || '';model.inputChanged();render();return true;
+      },
+      selectSourceItem:item=>{
+        if(!item?.frozen || model.active || model.busy || model.uncertain || externalBusy)return;
+        if(item.source==='cj'){source.input.value='cj';reference.input.value=item.url;}
+        else{source.input.value='alibaba-manual';manualMode.input.value='form';manual.reset(item);}
+        sourceFields();model.inputChanged();render();
+      },
       processing:()=>model.active || model.busy || model.uncertain,
       havePendingChanges:()=>model.hasEdits && model.job?.status==='ready'};
   }
-  const exported={MAX_JSON_BYTES,validId,safeLink,parseProductJSON,previewPayload,draftEdits,validateJob,shippingCost,productImages,diagnosticLabels,errorText,createModel,mount};
+  const exported={MAX_JSON_BYTES,validId,safeLink,parseProductJSON,previewPayload,draftEdits,validateJob,shippingCost,productImages,manualProductPayload,manualFormForItem,diagnosticLabels,errorText,createModel,mount};
   if(typeof module!=='undefined' && module.exports)module.exports=exported;
   else root.CatalogFlowImport=exported;
 })(globalThis);

@@ -6,7 +6,7 @@ Extract the release ZIP and double-click **CatalogFlow.exe**. The launcher opens
 workbench in your default browser. Python, Git, and a terminal are not required on the computer
 running the executable. Keep the launcher open while using the workbench; use **Open interface**
 to reopen it and **Exit** to stop the local service. Closing only the browser page does not stop
-the application. Exit refuses to stop an active preview or draft write; wait for the task to finish.
+the application. Exit refuses to stop an active AI check, test, preview or draft write; wait for the task to finish.
 
 CatalogFlow keeps its existing preview-first behavior. Starting the application does not contact
 your suppliers or write products to a store. Creating a store draft remains an explicit operation;
@@ -20,9 +20,17 @@ arguments.
 
 ## Import and review one product
 
+In v0.10, start with **Get started** to check the chosen CLI and its sign-in status, follow official
+installation/sign-in guidance, or explicitly test a small synthetic AI request (which can consume
+usage). Browser-selected CJ and Alibaba links enter **Collected products**; confirm collection
+before choosing one. Alibaba selections use a manual facts/variants/cost/freight form, without
+requiring JSON authoring. No store is required to try the software. See the
+[first-run walkthrough](https://github.com/qwq77777764/catalogflow/blob/main/docs/first-run.md).
+
 Save your connection profiles and pricing settings in the workbench, then use its import wizard:
 
-1. Select one CJ URL/PID and a saved CJ API profile, or upload an authorized normalized JSON file
+1. Select one CJ URL/PID and a saved CJ API profile, or fill in the manual product form with
+   authorized facts, variants, costs, freight and images. The advanced JSON upload remains available
    (`alibaba-manual`, UTF-8 with optional BOM, maximum 48 KiB). Choose Codex, Claude, or template
    generation. Select a saved WooCommerce profile now if you want to create a draft after review;
    a store is not required for a preview.
@@ -40,7 +48,7 @@ on that address is not a reliable recovery method. Restarting the application lo
 previews held in memory, while written reports remain. Review recovered content again; unsaved
 browser edits are not a persistent record.
 
-This wizard handles one CJ API product or one normalized manual JSON product. It does not normalize
+This wizard handles one CJ API product or one manual product from its form/advanced JSON. It does not automatically normalize
 an Alibaba/1688 web URL, process a batch, write through SSH, or migrate old private reports. See the
 [visual import guide](https://github.com/qwq77777764/catalogflow/blob/main/docs/visual-import.md)
 for input and review details.
@@ -127,7 +135,7 @@ Build implementation references:
 
 解压后双击 **CatalogFlow.exe**，程序会打开本机可视化界面；目标电脑不需要安装 Python。
 启动器的“打开界面”用于重新打开网页，“退出”用于停止服务。只关闭网页不会退出程序。
-预览或草稿写入执行中，退出操作会要求先等待任务完成。
+AI 检查、小型测试、预览或草稿写入执行中，退出操作会要求先等待任务完成。
 
 配置和工作报告继续保存在 `%APPDATA%\CatalogFlow`，密钥保存在当前 Windows 用户的凭据管理器。
 替换 EXE 不会清空这些数据，安装包也不包含他人的配置、报告或登录信息。
@@ -137,8 +145,9 @@ Build implementation references:
 
 单商品导入现在可直接在界面中完成：
 
-1. 先保存连接和定价，再选择 CJ 链接/PID 与 CJ 档案，或上传授权的规范化 JSON 文件
-   （`alibaba-manual`，UTF-8，可带 BOM，最多 48 KiB）。选择 Codex、Claude 或模板生成。
+1. 先保存所需连接和定价，再选择 CJ 链接/PID 与 CJ 档案，或直接填写已获授权的商品资料表单。
+   高级入口仍可上传规范化 JSON（`alibaba-manual`，UTF-8，可带 BOM，最多 48 KiB）。
+   选择 Codex、Claude 或模板生成。
    只做预览可不选店铺；如需随后创建草稿，应在生成预览前选定 WooCommerce 档案。
 2. 核对每个变体的成本、运费、USD 售价、原链接、图片数量及链接，并编辑标题、HTML 描述文本、
    分类和标签。售价来自开始预览时已保存的定价设置。

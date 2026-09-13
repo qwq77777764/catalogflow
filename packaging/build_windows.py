@@ -24,6 +24,7 @@ PUBLIC_ASSETS = (
     "dashboard-fx.js",
     "dashboard-history.js",
     "dashboard-import.js",
+    "dashboard-setup.js",
     "schemas/listing.schema.json",
     "browser/catalogflow-collector.user.js",
 )

@@ -7,10 +7,10 @@
 **Turn authorized CJ or Alibaba product facts and images into reviewable,
 original WooCommerce listing drafts with a locally installed Codex or Claude Code CLI.**
 
-[中文说明](README.zh-CN.md) · [Visual import guide](docs/visual-import.md) ·
+[中文说明](README.zh-CN.md) · [First-run walkthrough](docs/first-run.md) · [Visual import guide](docs/visual-import.md) ·
 [Connection dashboard](docs/configuration-dashboard.md) ·
 [Local AI setup](docs/local-ai.md) ·
-[Agent workflow](docs/agent-workflow.md) · [Browser-to-CMD workflow](docs/browser-queue-workflow.md)
+[Agent workflow](docs/agent-workflow.md) · [Browser selection queue](docs/browser-queue-workflow.md)
 
 CatalogFlow grew out of a working merchant workflow: select a product while logged in to a
 supplier site, send its URL and page title to a queue on the same computer,
@@ -20,6 +20,30 @@ and images, review the result, and only then create a hidden store draft.
 The public repository is a clean-room extraction. It contains no operator credentials,
 supplier-page archives, customer data, production store records, or automatic public
 publishing.
+
+## Start from the desktop
+
+Open **CatalogFlow.exe** and follow **Getting started**. Select Codex or Claude, click
+**Check installation and login**, and follow the official installation or login instructions
+when needed. The app can open a supported Windows CLI login window; otherwise it shows a command
+to run yourself. It does not install the CLI or complete account sign-in for you. An optional, explicitly
+started sample AI test checks a small synthetic task; it can consume account usage. A saved
+connection name or a successful sign-in check alone is not a successful model call.
+
+Paste a CJ product link, or click **Start collection**, install the supplied userscript in a
+compatible browser extension, and copy its one-line pairing code. On a supported product page,
+click **Add to CatalogFlow**, review what will be sent, and paste the code when prompted. Pairing
+is held only in that page's memory: another tab, a newly loaded product page, or a refresh needs
+the code again. Selected CJ and Alibaba links appear in **Collected products**. Choose
+**Finish and confirm collection** before selecting a product for preview. CJ facts come from the
+operator's official API; Alibaba selections open a manual product form, because its automatic
+supplier adapter is not implemented. No JSON file is required for this form. Existing JSON and
+frozen queue files remain supported.
+
+Choose the AI and click **Generate preview**. CatalogFlow hands the product task to the CLI and
+returns the result to this window; you do not send a separate chat message to start it. The local
+template option works without an AI account. A store is optional, and is needed only if an
+operator chooses to create a hidden draft after review. See the [walkthrough](docs/first-run.md).
 
 ## Why it is different
 
@@ -34,8 +58,9 @@ publishing.
   all return the same validated listing shape.
 - **Pricing remains deterministic.** The AI never sees source costs and does not decide final
   prices.
-- **Review one product in the browser.** Use a CJ URL/PID or an authorized JSON file, choose a
-  generator, and review each variant's costs, freight, USD price, and editable listing copy.
+- **Review one product in the browser.** Use a CJ URL/PID, the manual product form, or an
+  authorized JSON file, choose a generator, and review each variant's costs, freight, USD price,
+  and editable listing copy.
 - **Safe by default.** Every run starts as a local preview. A WooCommerce write requires both
   review acknowledgment and the create-draft button in the wizard, or `--draft --yes` in the CLI.
   The adapter can create only `draft + hidden` products.
@@ -94,7 +119,8 @@ remembers only the language code for the current local address and port. Switchi
 entered values and pending edits; core pricing remains in USD and pricing is not saved automatically.
 
 WooCommerce, Codex, and Claude profiles can be used now. The CJ source adapter is available as a
-preview for one explicitly selected CJ product; Alibaba/1688 and Zendrop remain planned. See
+preview for one explicitly selected CJ product; automatic Alibaba/1688 and Zendrop API adapters
+remain planned. Authorized Alibaba/1688 facts can already be entered in the manual form. See
 [docs/configuration-dashboard.md](docs/configuration-dashboard.md) for storage details, profile
 selection, and failure behavior.
 
@@ -148,10 +174,12 @@ beside the local profile metadata, and an absent file keeps the legacy margin de
 
 Open the dashboard's import wizard after saving the connections and pricing you want to use:
 
-1. Choose a **CJ product URL/PID** with a saved CJ profile, or an authorized **normalized JSON
-   file** using `alibaba-manual` (UTF-8, optional BOM, at most 48 KiB). Choose Codex, Claude, or
-   template generation. A WooCommerce profile is optional for preview; select it now if you intend
-   to create a draft from this preview.
+1. Choose a **CJ product URL/PID** with a saved CJ profile, or choose **Manual product form / JSON**
+   and **Fill in a form** to enter verified facts, variants, USD costs, and shipping per unit.
+   **Advanced: normalized JSON file** accepts one authorized `alibaba-manual` product object
+   (UTF-8, optional BOM, at most 48 KiB). A confirmed browser selection can fill the CJ input or
+   the manual form's source reference. Choose Codex, Claude, or template generation. A WooCommerce
+   profile is optional for preview; select it now if you intend to create a draft from this preview.
 2. Generate the preview in the background. Review the source link, image count and authorized
    image links, each variant's cost and freight, and its calculated USD selling price. Edit the
    listing title, HTML description as text, category, and tags; edits are validated before a write.
@@ -200,9 +228,15 @@ PATH, privacy, and troubleshooting details.
 
 ## Prepare an authorized product input
 
-For manual input, CatalogFlow consumes normalized JSON. Use operator-supplied structured data, an explicit
-authorized export, or an official supplier API. The browser selector queues an identifier/URL; it
-does not manufacture missing product facts. Never put cookies or credentials in this file.
+The visual **Manual product form / JSON** option lets you enter a product without writing JSON.
+Fill in its title, stable product reference, verified facts, variants, USD costs, and shipping per
+unit. Authorized image links are optional. Use one `Name: Value` per fact line; use advanced JSON
+when a variant needs several separately named attributes.
+
+The CLI and the advanced file input consume normalized JSON, such as the example below. Use
+operator-supplied data, an explicit authorized export, or an official supplier API. The browser
+selector queues a URL and title; it does not retrieve missing facts. Never put cookies or
+credentials in a product file.
 
 ```json
 {
@@ -257,40 +291,52 @@ responses, or send CJ credentials, costs, or freight to Codex/Claude. Authentica
 missing-route, malformed-data, and mismatched-product failures stop explicitly. See
 [docs/cj-adapter.md](docs/cj-adapter.md).
 
-## The CJ/Alibaba browser-to-CMD workflow
+## Select CJ or Alibaba products in the browser
 
-The operator workflow behind CatalogFlow uses three replaceable parts:
+The desktop now connects browser selection to the single-product import wizard:
 
 ```text
-logged-in CJ/Alibaba page
-        │ click “Add to local queue”
-        ▼
-127.0.0.1 browser collector → local queue → press Enter in CMD
-                                              │
-                                              ▼
-                           Codex CLI / Claude Code CLI
-                                              │
-                                              ▼
-                        validate → preview → hidden draft
+start collection → pair on a supported product page → Add to CatalogFlow
+→ review the local queue → finish and confirm → choose one product
+→ CJ official API or manual facts → Generate preview → review → optional hidden draft
 ```
 
-The clean public Alibaba selector and authenticated local receiver now ship with CatalogFlow.
+The bundled userscript supports CJ product details on `www.cjdropshipping.com` and
+`cjdropshipping.com`, and Alibaba international product details on `www.alibaba.com`.
+It does not support 1688 pages or search-result collection. Choose **Start collection**, then
+**Install / update collector script** and **Copy pairing code**. Install a compatible userscript
+manager separately if your browser does not have one. On each product page, click
+**Add to CatalogFlow**, confirm the displayed link/title, and paste the code when prompted.
+
+One paste supplies the receiver address and temporary collection-only token together. The script
+remembers them only in the current page's memory, not across tabs, newly loaded pages, or refreshes.
+The same code can pair another page while that collector remains active; starting a new collector
+requires its new code. Nothing is stored in the extension's synchronized storage.
+
+Return to **Collected products**, inspect the list, and click **Finish and confirm collection**.
+Then choose **Use in import wizard** for CJ, or **Fill in product details** for Alibaba. CJ uses
+your saved official API connection when you generate the preview. Alibaba requires its missing
+facts, costs, freight and authorized images to be supplied in the manual form or normalized JSON;
+its automatic supplier adapter remains unimplemented. Neither collection nor confirmation calls
+AI or writes to a store.
+
+The optional terminal collector remains available:
 
 ```powershell
 python -m catalogflow collect
 ```
 
-The command prints a local userscript installation URL, a one-time session token, and the queue
-file path. Install the script in Tampermonkey, open an Alibaba product-detail page, click
-**Add to CatalogFlow**, and enter the printed receiver URL and token. The token remains only in the
-userscript's in-memory closure for that page; it is not written to extension storage. Press Enter
-in the terminal to freeze the queue.
+It prints a local script installation URL, one-line pairing code, and queue file path. Pair the
+same script as above, then press Enter in the terminal to freeze the queue and stop collection.
+Enter does not start generation. Open the dashboard to use a confirmed item; if it was already
+running before this CLI collection, reopen it after stopping the service or use **Already have a
+collection queue file?** to import the snapshot (at most 48 KiB). The queue-file input and product
+JSON input are separate formats.
 
-This first collector deliberately sends only `source`, product-detail URL, and page title. It does
-not copy page HTML, cookies, images, prices, variants, or authentication data. The current collector
-targets Alibaba, so its frozen queue is not yet connected to the CJ adapter. Use a CJ URL/PID with
-`--supplier-profile` for the CJ API preview, or continue using normalized JSON. Alibaba queue
-normalization remains a separate future adapter.
+The selector sends only schema version, source, product-detail URL, and page title. It does not
+copy page HTML, cookies, images, prices, variants, or authentication data. Closing the app or
+cancelling the terminal collector stops receipt without approving unfinished selections. Saved
+unfinished queues can be explicitly confirmed after reopening.
 
 The old private userscript and Python controller were **not copied into this repository** because
 they mixed brittle DOM selectors, local automation, production configuration, and store writes.

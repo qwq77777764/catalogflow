@@ -1,12 +1,15 @@
 import json
+import socket
 import threading
 import urllib.error
 import urllib.request
 from pathlib import Path
 
+import pytest
+
 import catalogflow.collector as collector_module
 from catalogflow.collector import CollectorApplication, CollectorServer
-from catalogflow.selection_queue import SelectionQueue
+from catalogflow.selection_queue import SelectionQueue, normalize_selection
 
 TOKEN = "synthetic-session-token-that-is-long-enough"  # noqa: S105 - test-only
 ALIBABA_ORIGIN = "https://www.alibaba.com"
@@ -155,3 +158,112 @@ def test_packaged_userscript_is_narrow_and_does_not_persist_session_data() -> No
     assert "window.confirm(preview)" in script
     assert "product_url: productUrl" in script
     assert "product_url: location.href" not in script
+
+
+@pytest.mark.parametrize("entered", [True, False])
+def test_cli_only_freezes_queue_after_explicit_enter(tmp_path, monkeypatch, capsys, entered):
+    queue = SelectionQueue(tmp_path / "queue.json")
+    queue.add(normalize_selection("alibaba",
+              "https://www.alibaba.com/product-detail/Synthetic_1600000000000.html",
+              "Synthetic product"))
+
+    class Server:
+        server_address = ("127.0.0.1", 45678)
+
+        def __init__(self, *args):
+            pass
+
+        def serve_forever(self):
+            pass
+
+        def shutdown(self):
+            pass
+
+        def server_close(self):
+            pass
+
+    def finish(prompt):
+        if not entered:
+            raise EOFError
+        return ""
+
+    monkeypatch.setattr(collector_module, "SelectionQueue", lambda: queue)
+    monkeypatch.setattr(collector_module, "CollectorServer", Server)
+    monkeypatch.setattr("builtins.input", finish)
+    collector_module.run_collector(port=45678)
+    assert SelectionQueue(queue.path).frozen is entered
+    assert "CATALOGFLOW1:" in capsys.readouterr().out
+
+
+def _raw_selection_socket(server, data):
+    connection = socket.create_connection(server.server_address, timeout=2)
+    headers = (
+        "POST /api/selections HTTP/1.1\r\n"
+        "Host: 127.0.0.1\r\n"
+        "Content-Type: application/json\r\n"
+        f"Content-Length: {len(data)}\r\n"
+        f"X-CatalogFlow-Token: {TOKEN}\r\n"
+        f"X-CatalogFlow-Page-Origin: {ALIBABA_ORIGIN}\r\n\r\n"
+    ).encode()
+    connection.sendall(headers + data[:1])
+    return connection
+
+
+def test_collector_body_timeout_is_bounded_and_quiet(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(collector_module, "READ_TIMEOUT_SECONDS", 0.1)
+    server, base_url = start_collector(tmp_path)
+    try:
+        data = selection_request(base_url).data
+        with _raw_selection_socket(server, data) as connection:
+            response = connection.makefile("rb").read()
+        assert b"400 Bad Request" in response
+        assert b"invalid_selection" in response
+        assert not server.application.queue.list()
+    finally:
+        server.shutdown()
+        server.server_close()
+    assert capsys.readouterr().err == ""
+
+
+def test_collector_deep_json_is_rejected_without_handler_traceback(tmp_path, capsys):
+    server, base_url = start_collector(tmp_path)
+    request = selection_request(base_url)
+    request.data = b'{"source":' + b"[" * 2000 + b"0" + b"]" * 2000 + b"}"
+    try:
+        with pytest.raises(urllib.error.HTTPError) as error:
+            urllib.request.urlopen(request, timeout=2)  # noqa: S310 - loopback
+        assert error.value.code == 400
+        assert not server.application.queue.list()
+    finally:
+        server.shutdown()
+        server.server_close()
+    assert capsys.readouterr().err == ""
+
+
+def test_stopped_collector_rejects_already_accepted_slow_body(tmp_path, monkeypatch, capsys):
+    reading = threading.Event()
+    read_json = collector_module.CollectorRequestHandler._read_json
+
+    def tracked_read(handler):
+        reading.set()
+        return read_json(handler)
+
+    monkeypatch.setattr(collector_module.CollectorRequestHandler, "_read_json", tracked_read)
+    server, base_url = start_collector(tmp_path)
+    data = selection_request(base_url).data
+    try:
+        with _raw_selection_socket(server, data) as connection:
+            assert reading.wait(2)
+            server.application.stop_accepting()
+            server.shutdown()
+            server.server_close()
+            connection.sendall(data[1:])
+            response = connection.makefile("rb").read()
+        assert b"409 Conflict" in response
+        assert b"collection_stopped" in response
+        assert not server.application.queue.list()
+        assert server.application.queue.frozen is False
+    finally:
+        server.shutdown()
+        server.server_close()
+    assert capsys.readouterr().err == ""
